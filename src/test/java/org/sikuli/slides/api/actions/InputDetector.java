@@ -3,12 +3,12 @@ package org.sikuli.slides.api.actions;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.jnativehook.GlobalScreen;
-import org.jnativehook.NativeHookException;
-import org.jnativehook.keyboard.NativeKeyEvent;
-import org.jnativehook.keyboard.NativeKeyListener;
-import org.jnativehook.mouse.NativeMouseEvent;
-import org.jnativehook.mouse.NativeMouseInputListener;
+import com.github.kwhat.jnativehook.GlobalScreen;
+import com.github.kwhat.jnativehook.NativeHookException;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
+import com.github.kwhat.jnativehook.mouse.NativeMouseEvent;
+import com.github.kwhat.jnativehook.mouse.NativeMouseInputListener;
 import org.sikuli.recorder.detector.EventDetector;
 
 public class InputDetector {
@@ -23,14 +23,18 @@ public class InputDetector {
 	
 	public void start() throws NativeHookException{
 		GlobalScreen.registerNativeHook();
-		GlobalScreen.getInstance().addNativeKeyListener(keyboardDetector);
-		GlobalScreen.getInstance().addNativeMouseListener(mouseDetector);	
+		GlobalScreen.addNativeKeyListener(keyboardDetector);
+		GlobalScreen.addNativeMouseListener(mouseDetector);	
 	}
 	
 	public void stop(){
-		GlobalScreen.getInstance().removeNativeMouseListener(mouseDetector);
-		GlobalScreen.getInstance().removeNativeKeyListener(keyboardDetector);
-		GlobalScreen.unregisterNativeHook();
+		GlobalScreen.removeNativeMouseListener(mouseDetector);
+		GlobalScreen.removeNativeKeyListener(keyboardDetector);
+		try {
+			GlobalScreen.unregisterNativeHook();
+		} catch (NativeHookException e) {
+			// ignore for tests
+		}
 	}
 	
 	public NativeMouseEvent getLastMouseEvent(){

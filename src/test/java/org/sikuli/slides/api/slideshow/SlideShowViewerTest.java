@@ -9,7 +9,7 @@ import java.util.List;
 
 import javax.imageio.ImageIO;
 
-import org.jnativehook.NativeHookException;
+import com.github.kwhat.jnativehook.NativeHookException;
 import org.junit.Before;
 import org.junit.Test;
 import org.sikuli.api.DefaultLocation;

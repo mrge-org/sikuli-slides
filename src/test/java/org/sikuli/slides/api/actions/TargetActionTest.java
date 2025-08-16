@@ -7,7 +7,7 @@ import static org.junit.Assert.assertNotNull;
 
 import java.awt.event.MouseEvent;
 
-import org.jnativehook.NativeHookException;
+import com.github.kwhat.jnativehook.NativeHookException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

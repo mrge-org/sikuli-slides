@@ -8,8 +8,8 @@ import java.util.List;
 
 import javax.imageio.ImageIO;
 
-import org.jnativehook.NativeHookException;
-import org.jnativehook.mouse.NativeMouseEvent;
+import com.github.kwhat.jnativehook.NativeHookException;
+import com.github.kwhat.jnativehook.mouse.NativeMouseEvent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
