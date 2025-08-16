@@ -245,5 +245,18 @@
 				</plugins>
 			</build>
 		</profile>
+		<profile>
+			<id>macos</id>
+			<!-- Adds legacy OpenCV 2.4.9 natives for macOS Intel (x86_64). On Apple Silicon, use an x86_64 JVM under Rosetta. -->
+			<dependencies>
+				<dependency>
+					<groupId>org.bytedeco.javacpp-presets</groupId>
+					<artifactId>opencv</artifactId>
+					<version>2.4.9-0.9</version>
+					<classifier>macosx-x86_64</classifier>
+					<scope>test</scope>
+				</dependency>
+			</dependencies>
+		</profile>
 	</profiles>
 </project>

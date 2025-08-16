@@ -55,6 +55,10 @@ The test suite contains unit tests, image/OpenCV integration tests, and global i
   ```
   Notes:
   - Uses legacy OpenCV 2.4.9 JavaCPP presets (Windows x86_64 natives) to satisfy `sikuli-api:1.2.0`.
+  - On macOS, enable the `macos` profile to pull macOS natives:
+    ```
+    mvn -Pmacos -Pintegration test
+    ```
 
 - Global hook tests (requires desktop session & permissions):
   ```
@@ -64,6 +68,12 @@ The test suite contains unit tests, image/OpenCV integration tests, and global i
   - Run in an interactive desktop session (not headless/CI service session).
   - Ensure antivirus/security tools don't block native DLL extraction for `jnativehook`.
   - The profile sets `-Djava.awt.headless=false` and a writable `-Djava.io.tmpdir`.
+  - On macOS:
+    - Use the `macos` profile to add OpenCV natives:
+      ```
+      mvn -Pmacos -Phooks test
+      ```
+    - These OpenCV presets target Intel (x86_64). On Apple Silicon (ARM64), run an x86_64 JVM under Rosetta (e.g., install an Intel JDK and use that JAVA_HOME) or provide appropriate natives.
 
 ## Notes for Testers (Changes from 1.5 → 1.6)
 
