@@ -30,7 +30,7 @@ import javax.swing.JPanel;
 import javax.swing.SpringLayout;
 import javax.swing.SwingUtilities;
 
-import org.jnativehook.keyboard.NativeKeyEvent;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import org.sikuli.slides.api.Context;
 import org.sikuli.slides.api.io.PPTXSlidesReader;
 import org.sikuli.slides.api.models.Slide;

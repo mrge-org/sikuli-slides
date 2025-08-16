@@ -32,17 +32,18 @@
 	<artifactId>sikuli-slides-api</artifactId>
 	<name>Sikuli Slides API</name>
 	<url>http://lab.sikuli.org</url>
-	<version>1.5.1-SNAPSHOT</version>
+	<version>1.6</version>
 	<packaging>jar</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 	<repositories>
 		<repository>
-			<id>freelogger-mvn-repo</id>
-			<url>https://raw.github.com/peytonc/Freelogger-repo/master</url>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
 		</repository>
 	</repositories>
+
 
 	<scm>
 		<connection>scm:git:git@github.com:sikuli/sikuli-slides.git</connection>
@@ -73,9 +74,9 @@
 			<version>2.4</version>
 		</dependency>
 		<dependency>
-			<groupId>org</groupId>
+			<groupId>com.github.kwhat</groupId>
 			<artifactId>jnativehook</artifactId>
-			<version>1.1.4</version>
+			<version>2.2.2</version>
 		</dependency>
 		<dependency>
 			<groupId>com.googlecode.json-simple</groupId>
@@ -132,10 +133,9 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.5.1</version>
+				<version>3.11.0</version>
 				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
+					<release>8</release>
 				</configuration>
 			</plugin>
 			<plugin>

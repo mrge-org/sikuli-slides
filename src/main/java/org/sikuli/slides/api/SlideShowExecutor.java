@@ -3,12 +3,12 @@ package org.sikuli.slides.api;
 import java.awt.event.KeyEvent;
 import java.util.List;
 
-import org.jnativehook.GlobalScreen;
-import org.jnativehook.NativeHookException;
-import org.jnativehook.keyboard.NativeKeyEvent;
-import org.jnativehook.keyboard.NativeKeyListener;
-import org.jnativehook.mouse.NativeMouseEvent;
-import org.jnativehook.mouse.NativeMouseInputListener;
+import com.github.kwhat.jnativehook.GlobalScreen;
+import com.github.kwhat.jnativehook.NativeHookException;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
+import com.github.kwhat.jnativehook.mouse.NativeMouseEvent;
+import com.github.kwhat.jnativehook.mouse.NativeMouseInputListener;
 import org.sikuli.slides.api.actions.Action;
 import org.sikuli.slides.api.actions.ActionExecutionException;
 import org.sikuli.slides.api.interpreters.DefaultInterpreter;
@@ -192,15 +192,15 @@ class SlideShowExecutor
 				return;
 			} 			
 
-			GlobalScreen.getInstance().addNativeKeyListener(this);
-			GlobalScreen.getInstance().addNativeMouseMotionListener(this);
-			GlobalScreen.getInstance().addNativeMouseListener(this);
+			GlobalScreen.addNativeKeyListener(this);
+			GlobalScreen.addNativeMouseMotionListener(this);
+			GlobalScreen.addNativeMouseListener(this);
 		}
 
 		final public void stop(){
-			GlobalScreen.getInstance().removeNativeMouseListener(this);
-			GlobalScreen.getInstance().removeNativeMouseMotionListener(this);
-			GlobalScreen.getInstance().removeNativeKeyListener(this);
+			GlobalScreen.removeNativeMouseListener(this);
+			GlobalScreen.removeNativeMouseMotionListener(this);
+			GlobalScreen.removeNativeKeyListener(this);
 		}
 
 		public void nativeKeyPressed(NativeKeyEvent e) {

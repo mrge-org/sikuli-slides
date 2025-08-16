@@ -2,7 +2,7 @@ package org.sikuli.slides.api.slideshow;
 
 import java.awt.event.KeyEvent;
 
-import org.jnativehook.keyboard.NativeKeyEvent;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 
 class SlideShowHotkeyManager extends GlobalHotkeyManager{
 

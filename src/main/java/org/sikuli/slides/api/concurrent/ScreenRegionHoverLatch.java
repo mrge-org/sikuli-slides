@@ -1,6 +1,6 @@
 package org.sikuli.slides.api.concurrent;
 
-import org.jnativehook.mouse.NativeMouseEvent;
+import com.github.kwhat.jnativehook.mouse.NativeMouseEvent;
 import org.sikuli.api.ScreenRegion;
 
 public class ScreenRegionHoverLatch extends ScreenRegionLatch {

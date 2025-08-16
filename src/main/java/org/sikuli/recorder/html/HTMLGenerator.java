@@ -82,16 +82,16 @@ public class HTMLGenerator {
 			File outFile = new File(outputDir, pageUrl);
 			try {
 				Files.write(pageST.render(), outFile, Charsets.UTF_8);
-			} catch (IOException e1) {				
-
+			} catch (IOException e1) {
+				// ignore
 			}
 
-			pageListST.addAggr("pages.{url,name}", pageUrl, pageName);
+			pageListST.addAggr("pages.{url,name}", new Object[]{pageUrl, pageName});
 
 			if (firstPageUrl == null){
 				firstPageUrl = pageUrl;
 				indexST.add("firstPageUrl", firstPageUrl);
-			}				
+			}
 
 			// increment the page counter
 			no++;

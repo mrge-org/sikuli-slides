@@ -4,12 +4,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.concurrent.CountDownLatch;
 
-import org.jnativehook.GlobalScreen;
-import org.jnativehook.NativeHookException;
-import org.jnativehook.keyboard.NativeKeyEvent;
-import org.jnativehook.keyboard.NativeKeyListener;
-import org.jnativehook.mouse.NativeMouseEvent;
-import org.jnativehook.mouse.NativeMouseInputListener;
+import com.github.kwhat.jnativehook.GlobalScreen;
+import com.github.kwhat.jnativehook.NativeHookException;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
+import com.github.kwhat.jnativehook.mouse.NativeMouseEvent;
+import com.github.kwhat.jnativehook.mouse.NativeMouseInputListener;
 
 public class NativeInputLatch implements Latch, NativeKeyListener, NativeMouseInputListener {
 
@@ -40,9 +40,9 @@ public class NativeInputLatch implements Latch, NativeKeyListener, NativeMouseIn
 			return;
 		} 			
 		
-		GlobalScreen.getInstance().addNativeKeyListener(this);
-		GlobalScreen.getInstance().addNativeMouseMotionListener(this);
-		GlobalScreen.getInstance().addNativeMouseListener(this);
+		GlobalScreen.addNativeKeyListener(this);
+		GlobalScreen.addNativeMouseMotionListener(this);
+		GlobalScreen.addNativeMouseListener(this);
 		try {
 			detectedSignal.await();
 		} catch (InterruptedException e) {
@@ -52,9 +52,9 @@ public class NativeInputLatch implements Latch, NativeKeyListener, NativeMouseIn
 
 	final public void release(){
 		detectedSignal.countDown();
-		GlobalScreen.getInstance().removeNativeMouseListener(this);
-		GlobalScreen.getInstance().removeNativeMouseMotionListener(this);
-		GlobalScreen.getInstance().removeNativeKeyListener(this);
+		GlobalScreen.removeNativeMouseListener(this);
+		GlobalScreen.removeNativeMouseMotionListener(this);
+		GlobalScreen.removeNativeKeyListener(this);
 	}
 
 	public void nativeKeyPressed(NativeKeyEvent e) {

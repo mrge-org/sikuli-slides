@@ -1,9 +1,9 @@
 package org.sikuli.recorder.detector;
 
-import org.jnativehook.GlobalScreen;
-import org.jnativehook.NativeHookException;
-import org.jnativehook.mouse.NativeMouseEvent;
-import org.jnativehook.mouse.NativeMouseInputListener;
+import com.github.kwhat.jnativehook.GlobalScreen;
+import com.github.kwhat.jnativehook.NativeHookException;
+import com.github.kwhat.jnativehook.mouse.NativeMouseEvent;
+import com.github.kwhat.jnativehook.mouse.NativeMouseInputListener;
 import org.sikuli.api.ScreenRegion;
 import org.sikuli.recorder.event.ClickEvent;
 
@@ -59,14 +59,15 @@ implements NativeMouseInputListener {
 		//GlobalMouseListenerExample example = new GlobalMouseListenerExample();
 
 		//Add the appropriate listeners for the example object.
-		GlobalScreen.getInstance().addNativeMouseListener(this);
-		GlobalScreen.getInstance().addNativeMouseMotionListener(this);
+		GlobalScreen.addNativeMouseListener(this);
+		GlobalScreen.addNativeMouseMotionListener(this);
 	}
 	
 	public void stop(){
-		GlobalScreen.getInstance().removeNativeMouseListener(this);
-		GlobalScreen.getInstance().removeNativeMouseMotionListener(this);
+		GlobalScreen.removeNativeMouseListener(this);
+		GlobalScreen.removeNativeMouseMotionListener(this);
 	}
 	
+
 
 }

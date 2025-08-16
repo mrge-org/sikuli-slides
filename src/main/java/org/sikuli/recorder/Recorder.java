@@ -5,10 +5,10 @@ import java.io.File;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-import org.jnativehook.GlobalScreen;
-import org.jnativehook.NativeHookException;
-import org.jnativehook.keyboard.NativeKeyEvent;
-import org.jnativehook.keyboard.NativeKeyListener;
+import com.github.kwhat.jnativehook.GlobalScreen;
+import com.github.kwhat.jnativehook.NativeHookException;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 import org.sikuli.api.DesktopScreenRegion;
 import org.sikuli.api.Relative;
 import org.sikuli.api.ScreenRegion;
@@ -101,7 +101,7 @@ public class Recorder {
 		}
 
 		//Construct the example object and initialze native hook.
-		GlobalScreen.getInstance().addNativeKeyListener(new HotKeyListener());
+		GlobalScreen.addNativeKeyListener(new HotKeyListener());
 
 		try {
 			escapeSignal.await();
@@ -134,30 +134,38 @@ public class Recorder {
 			if(isWindows()){		        
 		        
 				// ALT+SHIFT+2
-				if (e.getKeyCode() == NativeKeyEvent.VK_2 && isShiftPressed && isAltPressed){                	
+				if (e.getKeyCode() == NativeKeyEvent.VC_2 && isShiftPressed && isAltPressed){                
 					logger.trace("ALT+SHIFT+2 is pressed");
 					startRecording();
 				}
 
-				// ALTL+SHIFT+ESC
-				if (e.getKeyCode() == NativeKeyEvent.VK_ESCAPE && isShiftPressed && isAltPressed){
+				// ALT+SHIFT+ESC
+				if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE && isShiftPressed && isAltPressed){
 					logger.trace("ALT+SHIFT+ESC is pressed");
-					GlobalScreen.unregisterNativeHook();
+					try {
+						GlobalScreen.unregisterNativeHook();
+					} catch (NativeHookException ex) {
+						logger.warn("Failed to unregister native hook", ex);
+					}
 					escapeSignal.countDown();
 				}
 
 		    }
 			else{
 				// CTRL+SHIFT+2
-				if (e.getKeyCode() == NativeKeyEvent.VK_2 && isShiftPressed && isCtrlPressed){                	
+				if (e.getKeyCode() == NativeKeyEvent.VC_2 && isShiftPressed && isCtrlPressed){                
 					logger.trace("CTRL+SHIFT+2 is pressed");
 					startRecording();
 				}
 
 				// CTRL+SHIFT+ESC
-				if (e.getKeyCode() == NativeKeyEvent.VK_ESCAPE && isShiftPressed && isCtrlPressed){
+				if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE && isShiftPressed && isCtrlPressed){
 					logger.trace("CTRL+SHIFT+ESC is pressed");
-					GlobalScreen.unregisterNativeHook();
+					try {
+						GlobalScreen.unregisterNativeHook();
+					} catch (NativeHookException ex) {
+						logger.warn("Failed to unregister native hook", ex);
+					}
 					escapeSignal.countDown();
 				}
 			}
