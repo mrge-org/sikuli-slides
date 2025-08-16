@@ -117,14 +117,22 @@
 		</dependency>
 		<dependency>
 			<groupId>org.mockito</groupId>
-			<artifactId>mockito-all</artifactId>
-			<version>1.9.5</version>
+			<artifactId>mockito-core</artifactId>
+			<version>5.12.0</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-log4j12</artifactId>
 			<version>1.6.6</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- Bring legacy OpenCV 2.4.9 native binaries (Windows x86_64) for tests -->
+		<dependency>
+			<groupId>org.bytedeco.javacpp-presets</groupId>
+			<artifactId>opencv</artifactId>
+			<version>2.4.9-0.9</version>
+			<classifier>windows-x86_64</classifier>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -185,6 +193,53 @@
 								<exclude>**/api/slideshow/**</exclude>
 								<exclude>**/sikuli/**</exclude>
 							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>integration</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<version>3.2.5</version>
+						<configuration>
+							<!-- Run integration (image/OpenCV) tests, but skip global hook-dependent tests -->
+							<excludes>
+								<exclude>**/api/actions/RobotActionTest.java</exclude>
+								<exclude>**/api/actions/ParallelActionTest.java</exclude>
+								<exclude>**/api/concurrent/LatchTest.java</exclude>
+								<exclude>**/api/AutomationExecutorTest.java</exclude>
+								<exclude>**/api/AutomationExecutorExceptionTest.java</exclude>
+								<exclude>**/api/slideshow/SlideShowControllerHotkeyTest.java</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>hooks</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<version>3.2.5</version>
+						<configuration>
+							<!-- Only run tests that require global keyboard/mouse hooks -->
+							<includes>
+								<include>**/api/actions/RobotActionTest.java</include>
+								<include>**/api/concurrent/LatchTest.java</include>
+								<include>**/api/AutomationExecutorTest.java</include>
+								<include>**/api/AutomationExecutorExceptionTest.java</include>
+								<include>**/api/slideshow/SlideShowControllerHotkeyTest.java</include>
+							</includes>
+							<!-- Help native libs extraction and UI access -->
+							<argLine>-Djava.awt.headless=false -Djava.io.tmpdir=${project.build.directory}/tmp</argLine>
 						</configuration>
 					</plugin>
 				</plugins>
