@@ -1,22 +1,18 @@
 package org.sikuli.slides.api.generators;
 
 import java.io.File;
-import org.sikuli.api.DesktopScreenRegion;
-import org.sikuli.api.ImageTarget;
-import org.sikuli.api.ScreenRegion;
-import org.sikuli.api.Target;
-import org.sikuli.api.robot.Mouse;
-import org.sikuli.api.robot.Keyboard;
-import org.sikuli.api.robot.desktop.DesktopMouse;
-import org.sikuli.api.robot.desktop.DesktopKeyboard;
+// import org.sikuli.api.DesktopScreenRegion; // Legacy API removed
+import org.sikuli.script.Screen;
+import org.sikuli.script.Region;
+import org.sikuli.script.Pattern;
+import org.sikuli.script.Key;
+import org.sikuli.script.KeyModifier;
 
 class GeneratedProgram {
 
-	ScreenRegion screenRegion = new DesktopScreenRegion();
-	Mouse mouse = new DesktopMouse();
-	Keyboard keyboard = new DesktopKeyboard();
+	Screen screen = new Screen();
+	Region screenRegion = screen;
 
-	
 	// TODO: modify these settings if the default settings don't work for you
 	public static int DEFAULT_WAIT_TIME = 5000;
 	public static float DEFAULT_MINSCORE = 0.7f;
@@ -32,16 +28,13 @@ class GeneratedProgram {
 	// Action: click
 	// Argument: 
 	public boolean step1() {
-	    	Target target = new ImageTarget(new File("image1.png"));
-	    	target.setMinScore(DEFAULT_MINSCORE);
-	    	ScreenRegion loc = screenRegion.find(target);
-	    	if (loc != null){
-	    		mouse.click(loc.getCenter());
+	    	Pattern pattern = new Pattern("image1.png").similar(DEFAULT_MINSCORE);
+	    	try {
+	    		screenRegion.click(pattern);
 	    		return true;
-	    	}else{
+	    	} catch (org.sikuli.script.FindFailed e) {
 	    		return false;
 	    	}
-
 	}
 
 
@@ -49,16 +42,13 @@ class GeneratedProgram {
 	// Action: rightClick
 	// Argument: 
 	public boolean step2() {
-	    	Target target = new ImageTarget(new File("image2.png"));
-	    	target.setMinScore(DEFAULT_MINSCORE);
-	    	ScreenRegion loc = screenRegion.find(target);
-	    	if (loc != null){
-	    		mouse.rightClick(loc.getCenter());
+	    	Pattern pattern = new Pattern("image2.png").similar(DEFAULT_MINSCORE);
+	    	try {
+	    		screenRegion.rightClick(pattern);
 	    		return true;
-	    	}else{
+	    	} catch (org.sikuli.script.FindFailed e) {
 	    		return false;
 	    	}
-
 	}
 
 
@@ -66,17 +56,14 @@ class GeneratedProgram {
 	// Action: type
 	// Argument: something to type
 	public boolean step3() {
-	    	Target target = new ImageTarget(new File("image3.png"));
-	    	target.setMinScore(DEFAULT_MINSCORE);
-	    	ScreenRegion loc = screenRegion.find(target);
-	    	if (loc != null){
-	    		mouse.click(loc.getCenter());
-	    		keyboard.type("something to type");
+	    	Pattern pattern = new Pattern("image3.png").similar(DEFAULT_MINSCORE);
+	    	try {
+	    		screenRegion.click(pattern);
+	    		screenRegion.type("something to type");
 	    		return true;
-	    	}else{
+	    	} catch (org.sikuli.script.FindFailed e) {
 	    		return false;
 	    	}
-
 	}
 
 
@@ -93,11 +80,13 @@ class GeneratedProgram {
 	// Action: exist
 	// Argument: 
 	public boolean step5() {
-	    	Target target = new ImageTarget(new File("image5.png"));
-	    	target.setMinScore(DEFAULT_MINSCORE);
-	    	ScreenRegion loc = screenRegion.find(target);	
-	    	return loc != null;
-
+	    	Pattern pattern = new Pattern("image5.png").similar(DEFAULT_MINSCORE);
+	    	try {
+	    		screenRegion.find(pattern);
+	    		return true;
+	    	} catch (org.sikuli.script.FindFailed e) {
+	    		return false;
+	    	}
 	}
 
 
@@ -105,10 +94,13 @@ class GeneratedProgram {
 	// Action: notExist
 	// Argument: 
 	public boolean step6() {
-	    	Target target = new ImageTarget(new File("image6.png"));
-	    	target.setMinScore(DEFAULT_MINSCORE);
-	    	ScreenRegion loc = screenRegion.find(target);	
-	    	return loc == null;
+	    	Pattern pattern = new Pattern("image6.png").similar(DEFAULT_MINSCORE);
+	    	try {
+	    		screenRegion.find(pattern);
+	    		return false; // Found when not expected
+	    	} catch (org.sikuli.script.FindFailed e) {
+	    		return true; // Not found as expected
+	    	}
 	}
 
 
@@ -116,17 +108,14 @@ class GeneratedProgram {
 	// Action: type
 	// Argument: something to type
 	public boolean step7() {
-	    	Target target = new ImageTarget(new File("image7.png"));
-	    	target.setMinScore(DEFAULT_MINSCORE);
-	    	ScreenRegion loc = screenRegion.find(target);
-	    	if (loc != null){
-	    		mouse.click(loc.getCenter());
-	    		keyboard.type("something to type");
+	    	Pattern pattern = new Pattern("image7.png").similar(DEFAULT_MINSCORE);
+	    	try {
+	    		screenRegion.click(pattern);
+	    		screenRegion.type("something to type");
 	    		return true;
-	    	}else{
+	    	} catch (org.sikuli.script.FindFailed e) {
 	    		return false;
 	    	}
-
 	}
 
 

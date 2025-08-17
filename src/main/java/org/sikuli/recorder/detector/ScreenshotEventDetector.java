@@ -3,6 +3,7 @@ package org.sikuli.recorder.detector;
 import java.awt.image.BufferedImage;
 
 import org.sikuli.recorder.event.ScreenShotEvent;
+import org.sikuli.script.ScreenImage;
 
 public class ScreenshotEventDetector extends EventDetector {
 
@@ -37,11 +38,11 @@ public class ScreenshotEventDetector extends EventDetector {
 		capturingThread.start();
 	}
 
-	private void performScreenCapture(){		 
-		BufferedImage image = getRegionOfInterest().capture();		
-		ScreenShotEvent e = new ScreenShotEvent();
-		e.setImage(image);
-		eventDetected(e);
-	}
-
+	private void performScreenCapture(){         
+		ScreenImage si = getRegionOfInterest().getScreen().capture(getRegionOfInterest());
+        BufferedImage image = si.getImage();        
+        ScreenShotEvent e = new ScreenShotEvent();
+        e.setImage(image);
+        eventDetected(e);
+    }
 }

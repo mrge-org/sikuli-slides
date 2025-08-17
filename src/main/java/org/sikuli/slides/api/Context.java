@@ -4,8 +4,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Map;
 
-import org.sikuli.api.DesktopScreenRegion;
-import org.sikuli.api.ScreenRegion;
+import org.sikuli.script.Screen;
+import org.sikuli.script.Region;
 import org.sikuli.slides.api.listeners.ExecutionVisualizer;
 import org.sikuli.slides.api.models.Slide;
 import org.stringtemplate.v4.ST;
@@ -31,7 +31,7 @@ public class Context {
 	private static final long DEFAULT_WAIT_TIME = 5000;
 	private static final float DEFAULT_MIN_SCORE = 0.7f;
 
-	private ScreenRegion screenRegion;
+	private Region screenRegion;
 	private Slide slide;	
 	private ExecutionListener executionListener = new ExecutionVisualizer();
 	
@@ -47,7 +47,7 @@ public class Context {
 	 * 
 	 * @param screenRegion
 	 */
-	public Context(ScreenRegion screenRegion) {
+	public Context(Region screenRegion) {
 		this.screenRegion = checkNotNull(screenRegion);
 	}
 	
@@ -71,7 +71,7 @@ public class Context {
 	 * @param context	the context to copy data from
 	 * @param screenRegion	the new screen region
 	 */
-	public Context(Context context, ScreenRegion screenRegion){
+	public Context(Context context, Region screenRegion){
 		copyFrom(context);
 		this.screenRegion = screenRegion;
 	}
@@ -81,7 +81,7 @@ public class Context {
 	 * set to the entire primary screen.
 	 */
 	public Context(){
-		screenRegion = new DesktopScreenRegion();
+		screenRegion = new Screen();
 	}
 	
 	/**
@@ -107,7 +107,7 @@ public class Context {
 	 * Get the screen region associated with this context
 	 * @return	the screen region
 	 */
-	public ScreenRegion getScreenRegion() {
+	public Region getScreenRegion() {
 		return screenRegion;
 	}
 	
@@ -115,7 +115,7 @@ public class Context {
 	 * Set the screen region of this context
 	 * @param screenRegion the screen region
 	 */
-	public void setScreenRegion(ScreenRegion screenRegion) {
+	public void setScreenRegion(Region screenRegion) {
 		this.screenRegion = checkNotNull(screenRegion);
 	}
 

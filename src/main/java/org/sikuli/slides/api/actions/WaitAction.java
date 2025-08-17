@@ -1,7 +1,7 @@
 package org.sikuli.slides.api.actions;
 
-import org.sikuli.api.ScreenRegion;
-import org.sikuli.api.Target;
+import org.sikuli.script.Pattern;
+import org.sikuli.script.Region;
 import org.sikuli.slides.api.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,11 +11,11 @@ import com.google.common.base.Objects;
 public class WaitAction extends TargetAction {
 	
 	private long duration = 10000;
-	private Target target;
+	private Pattern pattern;
 	private Action retry;
 	
-	public WaitAction(Target target){
-		super(target);
+	public WaitAction(Pattern pattern){
+		super(pattern);
 	}		
 
 	@Override
@@ -36,7 +36,7 @@ public class WaitAction extends TargetAction {
 //			}
 //			
 //		};
-		retry = new RetryAction(new TargetAction(target, new EmptyAction()), duration, 1000);		
+		retry = new RetryAction(new TargetAction(pattern, new EmptyAction()), duration, 1000);		
 		retry.execute(context);
 	}
 	
@@ -48,7 +48,7 @@ public class WaitAction extends TargetAction {
 	}
 	
 	public String toString(){
-		return Objects.toStringHelper(this).add("target",getTarget()).toString();
+		return Objects.toStringHelper(this).add("pattern",getPattern()).toString();
 	}
 
 	public long getDuration() {
@@ -59,11 +59,11 @@ public class WaitAction extends TargetAction {
 		this.duration = duration;
 	}
 
-	public Target getTarget() {
-		return target;
+	public Pattern getPattern() {
+		return pattern;
 	}
 
-	public void setTarget(Target target) {
-		this.target = target;
+	public void setPattern(Pattern pattern) {
+		this.pattern = pattern;
 	}
 }

@@ -2,12 +2,8 @@ package org.sikuli.slides.api.actions;
 
 import java.util.List;
 
-import org.sikuli.api.ScreenRegion;
-import org.sikuli.api.robot.Key;
-import org.sikuli.api.robot.Keyboard;
-import org.sikuli.api.robot.Mouse;
-import org.sikuli.api.robot.desktop.DesktopKeyboard;
-import org.sikuli.api.robot.desktop.DesktopMouse;
+import org.sikuli.script.Region;
+import org.sikuli.script.Key;
 import org.sikuli.slides.api.Context;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.sikuli.slides.api.interpreters.TypeStringParser;
@@ -57,10 +53,8 @@ public class TypeAction extends RobotAction {
 		String textToType = context.render(getText());
 		textToType = StringEscapeUtils.unescapeJava(textToType);
 
-		ScreenRegion screenRegion = context.getScreenRegion();
-		Mouse mouse = new DesktopMouse();
-		Keyboard keyboard=new DesktopKeyboard();
-		mouse.click(screenRegion.getCenter());
+		Region screenRegion = context.getScreenRegion();
+		screenRegion.click();
 		
 		TypeStringParser p = new TypeStringParser();
 		List<TypeStringPart> parts = p.parse(textToType);		
@@ -70,11 +64,11 @@ public class TypeAction extends RobotAction {
 				String keyText = part.getText();							
 				String key = interpretAsKeyString(keyText);
 				if (key != null){
-					keyboard.keyDown(key);				
-					keyboard.keyUp();			
+					screenRegion.keyDown(key);				
+					screenRegion.keyUp();			
 				}
 			}else if (part.getType() == TypeStringPart.Type.Text){			
-				keyboard.type(part.getText());
+				screenRegion.type(part.getText());
 			}			
 		}
 			
@@ -86,4 +80,3 @@ public class TypeAction extends RobotAction {
 	}
 
 }
-

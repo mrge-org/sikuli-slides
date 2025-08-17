@@ -1,7 +1,7 @@
 package org.sikuli.slides.driver;
 
-import org.sikuli.api.ScreenRegion;
-import org.sikuli.api.Target;
+import org.sikuli.script.Region;
+import org.sikuli.script.Pattern;
 
 public interface Widget {
 	
@@ -13,7 +13,7 @@ public interface Widget {
 	/** 
 	 * Execute a double click operation on this widget
 	 */
-	public void doubeClick();
+	public void doubleClick();
 	
 	/** 
 	 * Execute a right click operation on this widget
@@ -61,7 +61,7 @@ public interface Widget {
 	 * 
 	 * @return
 	 */
-	public Target getTarget();
+	public Pattern getPattern();
 	
 	
 	/**
@@ -74,13 +74,13 @@ public interface Widget {
 	 * Set the @ScreenRegion where widget is found
 	 * 
 	 */
-	public void setScreenRegion(ScreenRegion found);
+	public void setScreenRegion(Region found);
 	
 	/** 
 	 * Get the @ScreenRegion where this widget can be found
 	 * 
 	 */	
-	public ScreenRegion getScreenRegion();
+	public Region getScreenRegion();
 
 	
 }

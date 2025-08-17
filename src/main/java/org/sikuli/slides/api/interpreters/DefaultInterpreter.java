@@ -9,9 +9,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.sikuli.api.Relative;
-import org.sikuli.api.ScreenRegion;
-import org.sikuli.api.Target;
+import org.sikuli.script.Pattern;
+import org.sikuli.script.Region;
+import org.sikuli.script.Location;
 import org.sikuli.slides.api.Context;
 import org.sikuli.slides.api.actions.Action;
 import org.sikuli.slides.api.actions.AssertExistAction;
@@ -191,7 +191,7 @@ public class DefaultInterpreter implements Interpreter {
 			Target target = (new ContextImageTargetInterpreter()).interpret(slide);
 			if (target == null)
 				return null;
-			WaitAction action = new WaitAction(target);
+			WaitAction action = new WaitAction(pattern);
 			action.setDuration(duration);
 			return action;
 		}		
@@ -268,7 +268,7 @@ public class DefaultInterpreter implements Interpreter {
 			Target target = (new ContextImageTargetInterpreter()).interpret(slide);
 			if (target == null)
 				return null;
-			return new AssertExistAction(target);
+			return new AssertExistAction(pattern);
 		}
 	}
 
@@ -284,7 +284,7 @@ public class DefaultInterpreter implements Interpreter {
 			Target target = (new ContextImageTargetInterpreter()).interpret(slide);
 			if (target == null)
 				return null;
-			return new AssertNotExistAction(target);
+			return new AssertNotExistAction(pattern);
 		}
 	}
 
@@ -317,7 +317,7 @@ public class DefaultInterpreter implements Interpreter {
 			Target target = (new ContextImageTargetInterpreter()).interpret(slide);
 			if (target == null)
 				return null;
-			return new TargetAction(target, action);
+			return new TargetAction(pattern, action);
 		}
 	}
 	
@@ -325,20 +325,20 @@ public class DefaultInterpreter implements Interpreter {
 
 	public static class ContextImageTargetInterpreter implements TargetInterpreter {
 
-		public Target interpret(Slide slide, SlideElement targetElement) {
+		public Pattern interpret(Slide slide, SlideElement targetElement) {
 
 			ImageElement imageElement = (ImageElement) slide.select().intersects(targetElement).isImage().first();
 			if (imageElement == null)
 				return null;
 
-			Target target = createTarget(imageElement, targetElement);
-			if (target == null)
+			Pattern pattern = createTarget(imageElement, targetElement);
+			if (pattern == null)
 				return null;
-			return target;
+			return pattern;
 		}	
 
 		@Override
-		public Target interpret(Slide slide) {
+		public Pattern interpret(Slide slide) {
 
 			SlideElement targetElement = slide.select().isTarget().first();
 			if (targetElement == null)
@@ -347,7 +347,7 @@ public class DefaultInterpreter implements Interpreter {
 			return interpret(slide, targetElement);
 		}		
 
-		Target createTarget(ImageElement imageElement, SlideElement targetElement){
+		Pattern createTarget(ImageElement imageElement, SlideElement targetElement){
 			if (imageElement == null || targetElement == null)
 				return null;
 
@@ -366,7 +366,9 @@ public class DefaultInterpreter implements Interpreter {
 			xmin = Math.max(0, xmin);
 			ymin = Math.max(0, ymin);
 
-			return new ContextImageTarget(imageElement.getSource(), xmin, ymin, xmax, ymax); 
+			ContextImageTarget contextTarget = new ContextImageTarget(imageElement.getSource(), xmin, ymin, xmax, ymax);
+			// Convert ContextImageTarget to Pattern by getting its target image
+			return contextTarget.getTargetPattern(); 
 		}
 	}
 

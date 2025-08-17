@@ -1,8 +1,8 @@
 package org.sikuli.slides.driver;
 
-import org.sikuli.api.DesktopScreenRegion;
-import org.sikuli.api.ScreenRegion;
-import org.sikuli.api.Target;
+import org.sikuli.script.Pattern;
+import org.sikuli.script.Region;
+import org.sikuli.script.Screen;
 import org.sikuli.slides.api.models.Slide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,9 +35,9 @@ public class DefaultSlideDriver implements SlideDriver {
 		
 		log.debug("attempt to find: "+ element);
 					
-		Target target = element.getTarget();
-		ScreenRegion screen = getScreenRegion();		
-		ScreenRegion found = screen.find(target);
+		Pattern pattern = element.getPattern();
+		Screen screen = getScreen();
+		Region found = screen.exists(pattern, 0);
 			
 		if (found != null){
 			log.debug("target is found at: " + found);		
@@ -49,8 +49,8 @@ public class DefaultSlideDriver implements SlideDriver {
 		return element;
 	}
 
-	private ScreenRegion getScreenRegion() {
-		return new DesktopScreenRegion();
+	private Screen getScreen() {
+		return new Screen();
 	}
 
 }

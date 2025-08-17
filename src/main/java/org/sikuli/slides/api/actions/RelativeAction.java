@@ -1,7 +1,6 @@
 package org.sikuli.slides.api.actions;
 
-import org.sikuli.api.Relative;
-import org.sikuli.api.ScreenRegion;
+import org.sikuli.script.Region;
 import org.sikuli.slides.api.Context;
 
 import com.google.common.base.Objects;
@@ -44,20 +43,27 @@ public class RelativeAction extends ChainedAction {
 	
 	@Override
 	public void execute(Context context) throws ActionExecutionException {
-		ScreenRegion screenRegion = context.getScreenRegion();
+		Region base = context.getScreenRegion();
 		
-		ScreenRegion targetRegion;
+		Region targetRegion;
 		if (isPixelUnit){
-			targetRegion = Relative.to(screenRegion).region(x,y,width,height).getScreenRegion();
+			int tx = base.getX() + x;
+			int ty = base.getY() + y;
+			targetRegion = new Region(tx, ty, width, height);
 		}else{
-			targetRegion = Relative.to(screenRegion).region(xmin, ymin, xmax, ymax).getScreenRegion();
+			int bw = base.getW();
+			int bh = base.getH();
+			int tx = base.getX() + (int) Math.round(xmin * bw);
+			int ty = base.getY() + (int) Math.round(ymin * bh);
+			int tw = (int) Math.round((xmax - xmin) * bw);
+			int th = (int) Math.round((ymax - ymin) * bh);
+			targetRegion = new Region(tx, ty, tw, th);
 		}
-		
 					
 		Action child = getChild();
 		if (child != null){
-			Context childConext = new Context(context, targetRegion);
-			child.execute(childConext);
+			Context childContext = new Context(context, targetRegion);
+			child.execute(childContext);
 		}			
 	}
 	
@@ -90,5 +96,4 @@ public class RelativeAction extends ChainedAction {
 	public void setMinX(double minX) {
 		this.xmin = minX;
 	}
-
 }

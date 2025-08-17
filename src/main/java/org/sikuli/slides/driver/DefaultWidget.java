@@ -1,37 +1,29 @@
 package org.sikuli.slides.driver;
 
-import org.sikuli.api.ScreenRegion;
-import org.sikuli.api.Target;
-import org.sikuli.api.robot.Keyboard;
-import org.sikuli.api.robot.Mouse;
-import org.sikuli.api.robot.desktop.DesktopKeyboard;
-import org.sikuli.api.robot.desktop.DesktopMouse;
-import org.sikuli.api.visual.Canvas;
-import org.sikuli.api.visual.DesktopCanvas;
+import org.sikuli.script.Region;
+import org.sikuli.script.Pattern;
+import org.sikuli.script.Screen;
 
 import com.google.common.base.Objects;
 
 class DefaultWidget implements Widget {
 
-	private Target target;
+	private Pattern pattern;
 	private String label;
-	private ScreenRegion screenRegion = null;
-	
-	private Mouse mouse = new DesktopMouse();
-	private Keyboard keyboard = new DesktopKeyboard();
-	private Canvas canvas = new DesktopCanvas();
+	private Region screenRegion = null;
+	private Screen screen = new Screen();
 	
 	public DefaultWidget(){
 		
 	}
 
-	public DefaultWidget(Target t, String label){
-		this.target = t;
+	public DefaultWidget(Pattern p, String label){
+		this.pattern = p;
 		this.label = label;
 	}
 
-	public Target getTarget() {
-		return target;
+	public Pattern getPattern() {
+		return pattern;
 	}
 
 	public String getLabel() {
@@ -39,94 +31,94 @@ class DefaultWidget implements Widget {
 	}	
 	
 	public void click(){
-		ScreenRegion r = getScreenRegion();
+		Region r = getScreenRegion();
 		if (r != null){
-			mouse.click(r.getCenter());
+			r.click();
 		}
 	}
 	
 	@Override
-	public void doubeClick() {
-		ScreenRegion r = getScreenRegion();
+	public void doubleClick() {
+		Region r = getScreenRegion();
 		if (r != null){
-			mouse.doubleClick(r.getCenter());
+			r.doubleClick();
 		}		
 	}
 	
 	@Override
 	public void type(String text) {
-		ScreenRegion r = getScreenRegion();
+		Region r = getScreenRegion();
 		if (r != null){
-			mouse.click(r.getCenter());
-			keyboard.type(text);
+			r.click();
+			r.type(text);
 		}	
 	}	
 	
 	@Override
 	public void paste(String text) {
-		ScreenRegion r = getScreenRegion();
+		Region r = getScreenRegion();
 		if (r != null){
-			mouse.click(r.getCenter());
-			keyboard.paste(text);
+			r.click();
+			r.paste(text);
 		}	
 	}		
 	
 	public String toString(){
 		return Objects.toStringHelper(getClass().getSimpleName())
 				.add("label", label)
-				.add("target", target)				
+				.add("pattern", pattern)				
 				.toString();
 	}
 	
 	@Override
-	public void setScreenRegion(ScreenRegion screenRegion) {
+	public void setScreenRegion(Region screenRegion) {
 		this.screenRegion = screenRegion;
 	}
 	
 	@Override
-	public ScreenRegion getScreenRegion(){
+	public Region getScreenRegion(){
 		return screenRegion;
 	}
 
 	@Override
 	public void highlight() {
-		ScreenRegion r = getScreenRegion();
+		Region r = getScreenRegion();
 		if (r != null){
-			canvas.clear();
-			canvas.add().box().around(r);
-			canvas.display(1);
+			// Visual highlighting not supported in SikuliX 2.x
+			r.highlight(1);
 		}
 	}
 
 	@Override
 	public void rightClick() {
-		ScreenRegion r = getScreenRegion();
+		Region r = getScreenRegion();
 		if (r != null){
-			mouse.rightClick(r.getCenter());
+			r.rightClick();
 		}		
 	}
 
 	@Override
 	public void hover() {
-		ScreenRegion r = getScreenRegion();
+		Region r = getScreenRegion();
 		if (r != null){
-			mouse.hover(r.getCenter());
+			r.hover();
 		}	
 	}
 
 	@Override
 	public void drag() {
-		ScreenRegion r = getScreenRegion();
+		Region r = getScreenRegion();
 		if (r != null){
-			mouse.drag(r.getCenter());
+			r.dragDrop(r); // Drag to same location as placeholder
 		}			
 	}
 
 	@Override
 	public void drop() {
-		ScreenRegion r = getScreenRegion();
+		Region r = getScreenRegion();
 		if (r != null){
-			mouse.drop(r.getCenter());
+			// Drop functionality is part of dragDrop in SikuliX 2.x
+			System.out.println("Drop operation - use dragDrop instead");
 		}			
 	}	
 	

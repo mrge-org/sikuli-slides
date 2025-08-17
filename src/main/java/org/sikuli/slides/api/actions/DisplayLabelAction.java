@@ -2,9 +2,7 @@ package org.sikuli.slides.api.actions;
 
 import java.awt.Color;
 
-import org.sikuli.api.ScreenRegion;
-import org.sikuli.api.visual.Canvas;
-import org.sikuli.api.visual.ScreenRegionCanvas;
+import org.sikuli.script.Region;
 import org.sikuli.slides.api.Context;
 
 import com.google.common.base.Objects;
@@ -15,26 +13,21 @@ public class DisplayLabelAction implements Action {
 	private int fontSize = 12;
 	private int duration = 3000;
 	private Color backgroundColor = Color.yellow;
-	private Canvas canvas;
 
 	@Override
 	public void execute(Context context){
-		ScreenRegion targetRegion = context.getScreenRegion();		
+		Region targetRegion = context.getScreenRegion();		
 		String textToDisplay = context.render(text);
 		
-		canvas = new ScreenRegionCanvas(targetRegion);
-		canvas.add().label(textToDisplay).inside(targetRegion)
-					.styleWith()
-						.color(Color.black)
-						.fontSize((int)fontSize)
-						.lineWidth(2)
-						.backgroundColor(backgroundColor);		
-		canvas.show();		
+		// Visual display not supported in SikuliX 2.x
+		// Consider using logger or console output instead
+		System.out.println("Display Label: " + textToDisplay);
 	}
 	
 	@Override
 	public void stop(){
-		canvas.hide();
+		// Visual canvas not supported in SikuliX 2.x
+		System.out.println("Label display stopped");
 	}
 	
 	public String getText() {

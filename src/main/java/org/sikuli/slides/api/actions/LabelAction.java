@@ -2,10 +2,8 @@ package org.sikuli.slides.api.actions;
 
 import java.awt.Color;
 
-import org.sikuli.api.Relative;
-import org.sikuli.api.ScreenRegion;
-import org.sikuli.api.visual.Canvas;
-import org.sikuli.api.visual.ScreenRegionCanvas;
+// import org.sikuli.api.Relative; // Legacy API removed
+import org.sikuli.script.Region;
 import org.sikuli.slides.api.Context;
 import org.sikuli.slides.api.interpreters.SpatialRelationship;
 import org.sikuli.slides.api.models.SlideElement;
@@ -21,7 +19,6 @@ public class LabelAction implements Action {
 	private String text = "";
 	private int fontSize = 12;
 	private Color backgroundColor = Color.yellow;
-	private Canvas canvas;
 	
 	private SlideElement slideElement;
 		
@@ -35,7 +32,10 @@ public class LabelAction implements Action {
 	public void execute(Context context) throws ActionExecutionException{
 		log.trace("executed.");
 		
-		ScreenRegion targetRegion = context.getScreenRegion();		
+		Region targetRegion = context.getScreenRegion(); // Default to full screen region
+		// Visual label display not supported in SikuliX 2.x
+		// Consider using logger or console output instead
+		log.info("Label: {}", getText());		
 		if (spatial != null){
 			targetRegion = spatial.apply(context);
 			if (targetRegion == null){
@@ -46,21 +46,22 @@ public class LabelAction implements Action {
 
 		String textToDisplay = context.render(text);
 		
-		canvas = new ScreenRegionCanvas(targetRegion);
-		canvas.add().label(textToDisplay).inside(targetRegion)
-		.styleWith()
-			.color(Color.black)
-			.fontSize((int)fontSize)
-			.lineWidth(2)
-			.backgroundColor(backgroundColor);		
-		canvas.show();		
+		// canvas = new DesktopCanvas(); // Visual overlays not supportedtargetRegion);
+		// canvas.add().label(textToDisplay).inside(targetRegion)
+		// .styleWith()
+		// 	.color(Color.black)
+		// 	.fontSize((int)fontSize)
+		// 	.lineWidth(2)
+		// 	.backgroundColor(backgroundColor);		
+		// canvas.show();		
+		// canvas.show(); // Visual display not supported		
 	}
 	
 	@Override
 	public void stop(){
 		log.trace("stopped.");
-		if (canvas != null)
-			canvas.hide();
+		// if (canvas != null)
+		//	canvas.hide(); // Visual overlays not supported
 	}
 	
 	public String getText() {

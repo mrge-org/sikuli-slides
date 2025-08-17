@@ -1,9 +1,9 @@
 package org.sikuli.slides.api.sikuli;
 
-import org.sikuli.api.ScreenRegion;
-import org.sikuli.api.Target;
+import org.sikuli.script.Pattern;
+import org.sikuli.script.Region;
 
 public interface Hypothesis {
-	Target getTarget();
-	ScreenRegion interpretResult(ScreenRegion rawResult);
+    Pattern getPattern();
+    Region interpretResult(Region rawResult);
 }

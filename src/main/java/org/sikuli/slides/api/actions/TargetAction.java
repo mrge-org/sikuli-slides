@@ -1,31 +1,37 @@
 package org.sikuli.slides.api.actions;
 
-import org.sikuli.api.ScreenRegion;
-import org.sikuli.api.Target;
+import org.sikuli.script.Pattern;
+import org.sikuli.script.Region;
+import org.sikuli.script.Match;
 import org.sikuli.slides.api.Context;
 
 import com.google.common.base.Objects;
 
 public class TargetAction extends ChainedAction {
 	
-	private Target target;
+	private Pattern pattern;
 	
-	public TargetAction(Target target){
-		this.setTarget(target);
+	public TargetAction(Pattern pattern){
+		this.setPattern(pattern);
 	}
 	
-	public TargetAction(Target target, Action targetAction){
-		this.setTarget(target);
+	public TargetAction(Pattern pattern, Action targetAction){
+		this.setPattern(pattern);
 		setChild(targetAction);
 	}
 	
 	@Override
 	public void execute(Context context) throws ActionExecutionException {
-		getTarget().setMinScore(context.getMinScore());
-		ScreenRegion screenRegion = context.getScreenRegion();
-		ScreenRegion targetRegion = screenRegion.find(getTarget());
-		if (targetRegion != null){			
-			Context childConext = new Context(context, targetRegion);
+		Pattern searchPattern = getPattern().similar(context.getMinScore());
+		Region screenRegion = context.getScreenRegion();
+		Match targetMatch = null;
+		try {
+			targetMatch = screenRegion.find(searchPattern);
+		} catch (org.sikuli.script.FindFailed e) {
+			// target not found
+		}
+		if (targetMatch != null){			
+			Context childConext = new Context(context, targetMatch);
 			Action child = getChild();
 			if (child != null){
 				child.execute(childConext);			
@@ -37,15 +43,15 @@ public class TargetAction extends ChainedAction {
 
 	public String toString(){
 		return Objects.toStringHelper(this)				
-				.add("target", getTarget()).toString();
+				.add("pattern", getPattern()).toString();
 	}
 
-	public Target getTarget() {
-		return target;
+	public Pattern getPattern() {
+		return pattern;
 	}
 
-	public void setTarget(Target target) {
-		this.target = target;
+	public void setPattern(Pattern pattern) {
+		this.pattern = pattern;
 	}
 
 }

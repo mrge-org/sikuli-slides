@@ -1,65 +1,41 @@
 package org.sikuli.slides.api.actions;
 
-import java.awt.Color;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.util.ArrayList;
-import java.util.List;
-
-import com.github.kwhat.jnativehook.mouse.NativeMouseEvent;
-import org.sikuli.api.Relative;
-import org.sikuli.api.ScreenRegion;
-import org.sikuli.api.robot.desktop.DesktopScreen;
-import org.sikuli.api.visual.Canvas;
-import org.sikuli.api.visual.ScreenRegionCanvas;
-import org.sikuli.recorder.detector.EventDetector;
+import org.sikuli.script.Region;
 import org.sikuli.slides.api.Context;
 import org.sikuli.slides.api.concurrent.Latch;
 import org.sikuli.slides.api.concurrent.ScreenRegionHoverLatch;
 
-import com.google.common.base.Objects;
-
-import static com.google.common.base.Preconditions.*;
-
 public class PauseAction extends ChainedAction {
 
-	private Latch latch;
+    private Latch latch;
 
-	@Override
-	public void execute(Context context) throws ActionExecutionException {
+    @Override
+    public void execute(Context context) throws ActionExecutionException {
 
-		// set up a canvas to display a button in the middle of the screen
-		ScreenRegion r = context.getScreenRegion();
-		ScreenRegion centerRegion = Relative.to(r).region(0.4,0.4,0.6,0.6).getScreenRegion();		
+        Region r = context.getScreenRegion();
+        // compute center region as 40%-60% box
+        int rx = r.getX();
+        int ry = r.getY();
+        int rw = r.getW();
+        int rh = r.getH();
+        int cx = rx + (int) Math.round(0.4 * rw);
+        int cy = ry + (int) Math.round(0.4 * rh);
+        int cw = (int) Math.round(0.2 * rw);
+        int ch = (int) Math.round(0.2 * rh);
+        Region centerRegion = new Region(cx, cy, cw, ch);
 
-		Canvas canvas = new ScreenRegionCanvas(r);		
-		canvas.addBox(centerRegion).withColor(Color.black).withTransparency(0.7f);
-		canvas.addLabel(context.getScreenRegion().getCenter(), "  Mouse over to Continue ")
-		.withBackgroundColor(Color.black)
-		.withColor(Color.white)
-		.withTransparency(0.7f)
-		.withFontSize(20)
-		.withHorizontalAlignmentCenter()		
-		.withVerticalAlignmentMiddle();
-		canvas.show();
+        // wait for a hover event in the center box
+        latch = new ScreenRegionHoverLatch(centerRegion);
+        latch.await();
 
-		// wait for a click event on the button
-		latch = new ScreenRegionHoverLatch(centerRegion);
-		latch.await();
-				
-		// hide the button
-		canvas.hide();
-		
-		if (getChild() != null)
-			getChild().execute(context);
-	}
-	
-	public void stop(){
-		if (latch != null)
-			latch.release();
-		super.stop();
-	}
+        if (getChild() != null)
+            getChild().execute(context);
+    }
+
+    public void stop(){
+        if (latch != null)
+            latch.release();
+        super.stop();
+    }
 
 }

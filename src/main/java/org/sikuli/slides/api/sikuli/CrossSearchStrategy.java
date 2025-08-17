@@ -7,15 +7,16 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.sikuli.api.ScreenRegion;
-import org.sikuli.api.Target;
+import org.sikuli.script.Match;
+import org.sikuli.script.Pattern;
+import org.sikuli.script.Region;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 
 interface SearchStrategy {
-	public ScreenRegion perform(ScreenRegion screenRegion);
+	public Region perform(Region screenRegion);
 }
 
 public class CrossSearchStrategy implements SearchStrategy {
@@ -33,10 +34,10 @@ public class CrossSearchStrategy implements SearchStrategy {
 	}
 	
 	@Override
-	public ScreenRegion perform(ScreenRegion screenRegion){		
+	public Region perform(Region screenRegion){		
 		List<Hypothesis> hs = generateHypotheses(contextImage, targetRect);
 		logger.trace("generated {} hypotheses", hs.size());
-		ScreenRegion ret = testHypotheses(screenRegion, hs);		
+		Region ret = testHypotheses(screenRegion, hs);		
 		return ret;		
 	}
 
@@ -76,22 +77,24 @@ public class CrossSearchStrategy implements SearchStrategy {
 		return result;
 	}
 	
-	static private ScreenRegion testHypotheses(ScreenRegion screenRegion, List<Hypothesis> hypotheses){
+	static private Region testHypotheses(Region screenRegion, List<Hypothesis> hypotheses){
 		for(Hypothesis hypothesis : hypotheses){
-			
-			Target target = hypothesis.getTarget();
-			target.setMinScore(0.8f);
-			
-			List<ScreenRegion> lookupRegion = screenRegion.findAll(target);
-			logger.trace("test: {} ... found {} matches", hypothesis, lookupRegion.size());
-			
-			if(lookupRegion.size()>1){
-				continue;
+			Pattern pattern = hypothesis.getPattern().similar(0.8f);
+			List<Match> matches = Lists.newArrayList();
+			try {
+				for (Match m : screenRegion.findAll(pattern)) {
+					matches.add(m);
+				}
+			} catch (org.sikuli.script.FindFailed e) {
+				// no matches
 			}
-			else if(lookupRegion.size()==1){
-				ScreenRegion rawResult = lookupRegion.get(0);
+			logger.trace("test: {} ... found {} matches", hypothesis, matches.size());
+			if (matches.size() > 1) {
+				continue;
+			} else if (matches.size() == 1) {
+				Match rawResult = matches.get(0);
 				return hypothesis.interpretResult(rawResult);
-			}else {
+			} else {
 				return null;
 			}
 		}

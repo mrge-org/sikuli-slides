@@ -2,14 +2,13 @@ package org.sikuli.slides.driver;
 
 import java.util.List;
 
-import org.sikuli.api.Target;
+import org.sikuli.script.Pattern;
 import org.sikuli.slides.api.models.ImageElement;
 import org.sikuli.slides.api.models.Slide;
 import org.sikuli.slides.api.models.SlideElement;
 import org.sikuli.slides.api.sikuli.ContextImageTarget;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class DefaultUISpecInterpreter implements SlideSpecInterpreter { 
 	
@@ -29,15 +28,15 @@ public class DefaultUISpecInterpreter implements SlideSpecInterpreter {
 			if (imageElement == null)
 				continue;
 
-			Target target = interpret(slide, targetElement);
-			if (target == null)
+			Pattern pattern = interpret(slide, targetElement);
+			if (pattern == null)
 				continue;
 			
 			SlideElement labelElement = slide.select().intersects(targetElement).hasText().first();
 			if (labelElement == null)
 				continue;
 			
-			DefaultWidget element = new DefaultWidget(target, labelElement.getText());
+			DefaultWidget element = new DefaultWidget(pattern, labelElement.getText());
 			page.add(element);
 			
 			log.trace("added to spec: " + element);
@@ -45,19 +44,19 @@ public class DefaultUISpecInterpreter implements SlideSpecInterpreter {
 		return page;
 	}		
 
-	public Target interpret(Slide slide, SlideElement targetElement) {
+	public Pattern interpret(Slide slide, SlideElement targetElement) {
 
 		ImageElement imageElement = (ImageElement) slide.select().intersects(targetElement).isImage().first();
 		if (imageElement == null)
 			return null;
 
-		Target target = createTarget(imageElement, targetElement);
-		if (target == null)
+		Pattern pattern = createTarget(imageElement, targetElement);
+		if (pattern == null)
 			return null;
-		return target;
+		return pattern;
 	}
 
-	Target createTarget(ImageElement imageElement, SlideElement targetElement){
+	Pattern createTarget(ImageElement imageElement, SlideElement targetElement){
 		if (imageElement == null || targetElement == null)
 			return null;
 
@@ -76,10 +75,8 @@ public class DefaultUISpecInterpreter implements SlideSpecInterpreter {
 		xmin = Math.max(0, xmin);
 		ymin = Math.max(0, ymin);
 
-		return new ContextImageTarget(imageElement.getSource(), xmin, ymin, xmax, ymax); 
+		ContextImageTarget ctx = new ContextImageTarget(imageElement.getSource(), xmin, ymin, xmax, ymax);
+		return ctx.getTargetPattern(); 
 	}
 
 }
-
-
-

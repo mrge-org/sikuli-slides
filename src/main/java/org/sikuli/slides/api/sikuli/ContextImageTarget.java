@@ -2,25 +2,18 @@ package org.sikuli.slides.api.sikuli;
 
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.io.File;
+
 import java.io.IOException;
 import java.net.URL;
-import java.util.List;
 
 import javax.imageio.ImageIO;
 
-import org.sikuli.api.ImageTarget;
-import org.sikuli.api.ScreenRegion;
-import org.sikuli.api.Target;
-import org.sikuli.slides.api.Slides;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
-import com.google.common.collect.Lists;
-import com.google.common.io.Files;
 
-public class ContextImageTarget implements Target {
+public class ContextImageTarget {
 
 	static Logger logger = LoggerFactory.getLogger(ContextImageTarget.class);
 	
@@ -31,7 +24,6 @@ public class ContextImageTarget implements Target {
 	private double xmax;
 	private double ymin;
 	private double ymax;
-	private int limit = 1;
 
 	private boolean isPixels =false;
 
@@ -58,41 +50,6 @@ public class ContextImageTarget implements Target {
 		this.isPixels = true;
 	}
 
-	@Override
-	public double getMinScore() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public void setMinScore(double minScore) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public int getLimit() {
-		return limit;
-	}
-
-	@Override
-	public void setLimit(int limit) {
-		this.limit = limit;
-
-	}
-
-	@Override
-	public Ordering getOrdering() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void setOrdering(Ordering ordering) {
-		// TODO Auto-generated method stub
-
-	}
-	
 	public Rectangle getTargetBounds(){
 		BufferedImage image = getContextImage();		
 		Rectangle r = new Rectangle();
@@ -115,16 +72,11 @@ public class ContextImageTarget implements Target {
 		BufferedImage image = getContextImage();
 		return image.getSubimage(bounds.x, bounds.y, bounds.width, bounds.height);
 	}
-
-	@Override
-	public List<ScreenRegion> doFindAll(ScreenRegion screenRegion) {
-		SearchStrategy strategy = new CrossSearchStrategy(getContextImage(), getTargetBounds());
-		ScreenRegion ret = strategy.perform(screenRegion);			
-		if (ret == null){
-			return Lists.newArrayList();
-		}else{
-			return Lists.newArrayList(ret);
-		}
+	
+	public org.sikuli.script.Pattern getTargetPattern(){
+		BufferedImage targetImage = getTargetImage();
+		org.sikuli.script.Image img = new org.sikuli.script.Image(targetImage);
+		return new org.sikuli.script.Pattern(img);
 	}
 
 	public BufferedImage getContextImage() {
@@ -140,12 +92,12 @@ public class ContextImageTarget implements Target {
 	public String toString(){
 		if (isPixels){
 			return Objects.toStringHelper(this)
-					.add("image", contextImageURL)
-					.add("x", x)
-					.add("y", y)
-					.add("width", width)
-					.add("height", height)
-					.toString();
+				.add("image", contextImageURL)
+				.add("x", x)
+				.add("y", y)
+				.add("width", width)
+				.add("height", height)
+				.toString();
 			}else{
 		return Objects.toStringHelper(this)
 				.add("image", contextImageURL)
@@ -154,6 +106,4 @@ public class ContextImageTarget implements Target {
 				.toString();
 			}
 	}
-
-
 }
