@@ -25,7 +25,7 @@
 	<artifactId>sikuli-slides</artifactId>
 	<name>Sikuli Slides Apps</name>
 	<url>http://lab.sikuli.org</url>
-	<version>1.6</version>
+	<version>1.7</version>
 	<packaging>jar</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -35,7 +35,7 @@
 		<dependency>
 			<groupId>org.sikuli</groupId>
 			<artifactId>sikuli-slides-api</artifactId>
-			<version>1.6</version>
+			<version>1.7</version>
 		</dependency>
 		<dependency>
 			<groupId>com.install4j</groupId>
