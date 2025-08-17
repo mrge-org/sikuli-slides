@@ -144,6 +144,14 @@
 				<version>3.11.0</version>
 				<configuration>
 					<release>8</release>
+					<excludes>
+						<!-- Exclude legacy Piccolo UI viewers while migrating -->
+						<exclude>**/org/sikuli/slides/api/views/**</exclude>
+						<exclude>**/org/sikuli/slides/api/slideshow/**</exclude>
+						<!-- Exclude recorder and examples relying on legacy org.sikuli.api -->
+						<exclude>**/org/sikuli/recorder/**</exclude>
+						<exclude>**/org/sikuli/slides/driver/**</exclude>
+					</excludes>
 				</configuration>
 			</plugin>
 			<plugin>

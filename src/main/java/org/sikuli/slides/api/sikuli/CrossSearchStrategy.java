@@ -82,9 +82,10 @@ public class CrossSearchStrategy implements SearchStrategy {
 			Pattern pattern = hypothesis.getPattern().similar(0.8f);
 			List<Match> matches = Lists.newArrayList();
 			try {
-				for (Match m : screenRegion.findAll(pattern)) {
-					matches.add(m);
-				}
+				java.util.Iterator<Match> it = screenRegion.findAll(pattern);
+                while (it != null && it.hasNext()) {
+                    matches.add(it.next());
+                }
 			} catch (org.sikuli.script.FindFailed e) {
 				// no matches
 			}

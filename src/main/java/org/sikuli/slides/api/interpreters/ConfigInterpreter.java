@@ -6,20 +6,16 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.sikuli.api.DesktopScreenRegion;
-import org.sikuli.api.robot.desktop.DesktopScreen;
+import org.sikuli.script.Screen;
 import org.sikuli.slides.api.Context;
-import org.sikuli.slides.api.actions.RobotAction;
 import org.sikuli.slides.api.actions.Action;
 import org.sikuli.slides.api.actions.ActionExecutionException;
-import org.sikuli.slides.api.actions.SequentialAction;
 import org.sikuli.slides.api.actions.ConfigAction;
 import org.sikuli.slides.api.models.Slide;
 import org.sikuli.slides.api.models.SlideElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -143,19 +139,19 @@ public class ConfigInterpreter implements Interpreter {
 			}
 			final int idToSet = id;
 
-			Action action = new ConfigAction(){
-				@Override
-				public void execute(Context context)
-						throws ActionExecutionException {
-					if (idToSet < DesktopScreen.getNumberScreens()){
-						context.setScreenRegion(new DesktopScreenRegion(idToSet));
-					}
-				}			
-			};
-			return action;
-		}
+            Action action = new ConfigAction(){
+                @Override
+                public void execute(Context context)
+                        throws ActionExecutionException {
+                    if (idToSet < Screen.getNumberScreens()){
+                        context.setScreenRegion(new Screen(idToSet));
+                    }
+                }           
+            };
+            return action;
+        }
 
-	};
+    };
 	
 	
 	static class ConfigParamsAction extends ConfigAction {

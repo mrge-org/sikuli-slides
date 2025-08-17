@@ -42,7 +42,7 @@ public class TypeAction extends RobotAction {
 			return Key.BACKSPACE;
 		}else if (name.equals("PAGEUP")){
 			return Key.PAGE_UP;
-		}else if (name.equals("PAGEDOAN")){
+		}else if (name.equals("PAGEDOWN")){
 			return Key.PAGE_DOWN;
 		}
 		return null;
@@ -64,8 +64,7 @@ public class TypeAction extends RobotAction {
 				String keyText = part.getText();							
 				String key = interpretAsKeyString(keyText);
 				if (key != null){
-					screenRegion.keyDown(key);				
-					screenRegion.keyUp();			
+					screenRegion.type(key);				
 				}
 			}else if (part.getType() == TypeStringPart.Type.Text){			
 				screenRegion.type(part.getText());

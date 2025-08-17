@@ -1,5 +1,6 @@
 package org.sikuli.recorder.html;
 
+import java.awt.Desktop;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
@@ -8,7 +9,6 @@ import java.net.URI;
 import java.net.URL;
 import java.util.List;
 
-import org.sikuli.api.API;
 import org.sikuli.recorder.event.ClickEvent;
 import org.sikuli.recorder.event.ClickEventGroup;
 import org.sikuli.recorder.event.Event;
@@ -118,9 +118,12 @@ public class HTMLGenerator {
 		HTMLGenerator g = new HTMLGenerator();
 		g.generate(inputDir, outputDir);
 
-		URI uri = new File(outputDir, "index.html").toURI();
-		URL url = uri.toURL();
-		API.browse(url);
-	}
+		        URI uri = new File(outputDir, "index.html").toURI();
+        try {
+            Desktop.getDesktop().browse(uri);
+        } catch (IOException e) {
+            // ignore
+        }
+    }
 
 }

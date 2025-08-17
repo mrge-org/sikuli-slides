@@ -5,8 +5,6 @@ import java.io.File;
 import org.sikuli.script.Screen;
 import org.sikuli.script.Region;
 import org.sikuli.script.Pattern;
-import org.sikuli.script.Key;
-import org.sikuli.script.KeyModifier;
 
 class GeneratedProgram {
 
@@ -121,16 +119,16 @@ class GeneratedProgram {
 
 	public void executeAll(){
 
-		boolean success1 = step1();
-		boolean success2 = step2();
-		boolean success3 = step3();
-		boolean success4 = step4();
-		boolean success5 = step5();
-		boolean success6 = step6();
-		boolean success7 = step7();
+		step1();
+		step2();
+		step3();
+		step4();
+		step5();
+		step6();
+		step7();
 
-		// TODO: Add code to handle the return value of each step
-	}
+		// TODO: Optionally handle the return value of each step
+    	}
 
 	static public void main(String... args){
 		GeneratedProgram prog = new GeneratedProgram();

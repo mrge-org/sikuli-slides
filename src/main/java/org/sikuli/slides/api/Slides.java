@@ -8,8 +8,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 
-import org.sikuli.api.DesktopScreenRegion;
-import org.sikuli.api.ScreenRegion;
+import org.sikuli.script.Screen;
 import org.sikuli.slides.api.actions.Action;
 import org.sikuli.slides.api.interpreters.DefaultInterpreter;
 import org.sikuli.slides.api.interpreters.Interpreter;
@@ -40,8 +39,7 @@ public class Slides {
 	 */
 	static public void execute(URL url) throws SlideExecutionException {
 		checkNotNull(url);
-		ScreenRegion screenRegion = new DesktopScreenRegion();
-		Context context = new Context(screenRegion);
+		Context context = new Context(new Screen());
 		execute(url, context);		
 	}
 
