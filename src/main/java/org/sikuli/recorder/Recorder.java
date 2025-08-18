@@ -1,6 +1,5 @@
 package org.sikuli.recorder;
 
-import java.awt.Color;
 import java.io.File;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -9,11 +8,8 @@ import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
-import org.sikuli.api.DesktopScreenRegion;
-import org.sikuli.api.Relative;
-import org.sikuli.api.ScreenRegion;
-import org.sikuli.api.visual.Canvas;
-import org.sikuli.api.visual.DesktopCanvas;
+import org.sikuli.script.Region;
+import org.sikuli.script.Screen;
 import org.sikuli.recorder.detector.EventDetector;
 import org.sikuli.recorder.detector.MouseEventDetector;
 import org.sikuli.recorder.detector.ScreenshotEventDetector;
@@ -27,17 +23,16 @@ public class Recorder {
 	
 	static Logger logger = LoggerFactory.getLogger(Recorder.class);
 
-	// used to draw a red box to visualize the region of interest
-	private Canvas canvas;
-	private ScreenRegion regionOfInterest;
+	// Region of interest; visualization removed during migration
+	private Region regionOfInterest;
 
 	public Recorder(){
 		EventDetector d1 = new MouseEventDetector();
 		EventDetector d2 = new ScreenshotEventDetector();
-		canvas = new DesktopCanvas();
 		addEventDetector(d1);
 		addEventDetector(d2);
-		setRegionOfInterest(new DesktopScreenRegion());
+		// Default to full primary screen
+		setRegionOfInterest(new Screen());
 	}	
 
 	public File getEventDir() {
@@ -67,7 +62,7 @@ public class Recorder {
 
 
 
-	public void setRegionOfInterest(ScreenRegion screenRegion) {
+	public void setRegionOfInterest(Region screenRegion) {
 		regionOfInterest = screenRegion;
 		for (EventDetector d : detectors){
 			d.setRegionOfInterest(screenRegion);
@@ -84,11 +79,6 @@ public class Recorder {
 	}
 
 	public void start(){
-
-		ScreenRegion outsideBorder = Relative.to(regionOfInterest).taller(7).wider(7).getScreenRegion();
-		// draw bigger so the red lines won't be captured in screenshots
-		canvas.add().box().around(outsideBorder).styleWith().color(Color.red).lineWidth(3);
-		canvas.show();
 
 		try {
 			GlobalScreen.registerNativeHook();
@@ -109,8 +99,6 @@ public class Recorder {
 		}
 
 		stopRecording();
-
-		canvas.hide();
 		System.out.println("Recording is stopped.");
 
 	}

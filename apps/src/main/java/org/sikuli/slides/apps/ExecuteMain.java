@@ -6,8 +6,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 
-import org.sikuli.api.DesktopScreenRegion;
-import org.sikuli.api.ScreenRegion;
+import org.sikuli.script.Screen;
+import org.sikuli.script.Region;
 import org.sikuli.slides.api.Context;
 import org.sikuli.slides.api.ExecutionFilter;
 import org.sikuli.slides.api.ExecutionFilter.Factory;
@@ -21,14 +21,14 @@ import com.sampullara.cli.Argument;
 
 public class ExecuteMain {
 
-	static final String EXE = "java -jar sikuli-slides-1.4.0.jar execute";
-	static final String SYNTAX =  "input [options]";
+    static final String EXE = "java -jar sikuli-slides-1.7.jar execute";
+    static final String SYNTAX = "input [options]";
 
-	@Argument(value = "help", description = "Print help message", required = false)
-	private boolean help = false;
+    @Argument(value = "help", description = "Print help message", required = false)
+    private boolean help = false;
 
-	@Argument(value = "screen", description = "The id of the connected screen/monitor (default is 0).", required = false)
-	private Integer screenId = 0;
+    @Argument(value = "screen", description = "The id of the connected screen/monitor (default is 0).", required = false)
+    private Integer screenId = 0;
 
 	@Argument(value = "min_score", description = "The minimum similarity score for a target to be considered as a match. It's on a 0 to 1 scale where 0 is the least precise search and 1.0 is the most precise search (default is 0.7).", required = false)
 	private Float minScore = 0.7f;
@@ -51,6 +51,7 @@ public class ExecuteMain {
 	
 	Context context;
 	URL url;
+    private boolean helpRequested = false;
 
 	public ExecutionFilter parseBookmark(){
 		if (bookmark == null)
@@ -103,9 +104,9 @@ public class ExecuteMain {
 		// set wait time
 		context.setWaitTime(wait);
 
-		// set screen region
-		ScreenRegion screenRegion = new DesktopScreenRegion(screenId);
-		context.setScreenRegion(screenRegion);
+		// set screen region (full screen of the selected monitor)
+        Region screenRegion = new Screen(screenId);
+        context.setScreenRegion(screenRegion);
 
 		// set filter
 		ExecutionFilter slideSelector = parseRange();
@@ -142,68 +143,68 @@ public class ExecuteMain {
 //	    consoleAppender.start();
 //
 //		Logger rootLogger = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-//		rootLogger.detachAndStopAllAppenders();
-//		rootLogger.addAppender(consoleAppender);
-//		rootLogger.setLevel(logLevel);
-	}
-	
+    }
+    void parseArgs(String... args) throws IllegalArgumentException {
+        List<String> rest = null;
+        rest = Args.parse(this, args);
+        // If help flag provided, don't require input
+        if (help) {
+            helpRequested = true;
+            return;
+        }
+        if (rest == null || rest.size() != 1) {
+            //exit("Invalid syntax");
+            throw new IllegalArgumentException("missing input");
+        }
+        context = parseContext();
+        String input = rest.get(0);
+        url = parseInputAsURL(input);
+    }
 
-	void parseArgs(String... args) throws IllegalArgumentException {
-		List<String> rest = null;
-		rest = Args.parse(this, args);
-		if (rest == null || rest.size() != 1) {
-			//exit("Invalid syntax");
-			throw new IllegalArgumentException("missing input");
-		}
-		context = parseContext();		
-		String input = rest.get(0);		
-		url = parseInputAsURL(input);
-	}
+    public void execute(String... args){
+        try{
+            parseArgs(args);
+        }catch(IllegalArgumentException e){
+            System.err.println("Error parsing arguments: " + e.getMessage());
+            Args.usage(this, EXE + " " + SYNTAX);
+            return;
+        }
 
-	public void execute(String... args){
-		try{
-			parseArgs(args);
-		}catch(IllegalArgumentException e){
-			System.err.println("Error parsing arguments: " + e.getMessage());
-			Args.usage(this, EXE + "" + SYNTAX);
-			return;
-		}
+        if (helpRequested){
+            Args.usage(this, EXE + " " + SYNTAX);
+            return;
+        }
+        
+        try {
+            Slides.execute(url, context);
+        } catch (SlideExecutionException e) {
+            System.err.println("Execution failed because " + e.getMessage());            
+            if (e.getSlide() != null){
+                System.err.print("On slide no. " + e.getSlide().getNumber());
+                System.err.println(" Failed to execute " + e.getAction());
+            }            
+        }    
+    }
 
-		if (help){
-			Args.usage(this, EXE + "" + SYNTAX);
-			return;
-		}
-		
-		try {
-			Slides.execute(url, context);
-		} catch (SlideExecutionException e) {
-			System.err.println("Execution failed because " + e.getMessage());			
-			if (e.getSlide() != null){
-				System.err.print("On slide no. " + e.getSlide().getNumber());
-				System.err.println(" Failed to execute " + e.getAction());
-			}			
-		}	
-	}
+    public static void main(String... args) {
+        ExecuteMain main = new ExecuteMain();		
+        main.execute(args);
+    }
 
-	public static void main(String... args) {
-		ExecuteMain main = new ExecuteMain();		
-		main.execute(args);
-	}
-
-	private static URL parseInputAsURL(String input) {
-		URL webUrl = null;
-		URL fileUrl = null;
-		try {
-			webUrl = new URL(input);
-		} catch (MalformedURLException e1) {			
-		}
-		try{
-			fileUrl = (new File(input)).toURI().toURL();
-		} catch (MalformedURLException e1) {			
-		}		
-		if (webUrl == null && fileUrl == null){
-			throw new IllegalArgumentException("Not a valid input file: " + input);
-		}
-		return Objects.firstNonNull(webUrl, fileUrl);
-	}
+    private static URL parseInputAsURL(String input) {
+        URL webUrl = null;
+        URL fileUrl = null;
+        try {
+            webUrl = new URL(input);
+        } catch (MalformedURLException e1) {
+        }
+        try {
+            fileUrl = (new File(input)).toURI().toURL();
+        } catch (MalformedURLException e1) {
+        }
+        if (webUrl == null && fileUrl == null) {
+            throw new IllegalArgumentException("Not a valid input file: " + input);
+        }
+        return Objects.firstNonNull(webUrl, fileUrl);
+    }
 }

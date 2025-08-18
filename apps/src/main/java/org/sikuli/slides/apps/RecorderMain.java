@@ -3,7 +3,7 @@ package org.sikuli.slides.apps;
 import java.io.File;
 import java.util.List;
 
-import org.sikuli.api.DesktopScreenRegion;
+import org.sikuli.script.Region;
 import org.sikuli.recorder.Recorder;
 import org.sikuli.recorder.pptx.PPTXGenerator;
 
@@ -38,7 +38,7 @@ public class RecorderMain {
 			int y = Command.bounds[1];
 			int w = Command.bounds[2];
 			int h = Command.bounds[3];			
-			rec.setRegionOfInterest(new DesktopScreenRegion(x,y,w,h));
+			rec.setRegionOfInterest(new Region(x,y,w,h));
 		}
 		
 		rec.start();

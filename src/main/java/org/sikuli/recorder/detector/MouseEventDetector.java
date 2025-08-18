@@ -4,7 +4,7 @@ import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;
 import com.github.kwhat.jnativehook.mouse.NativeMouseEvent;
 import com.github.kwhat.jnativehook.mouse.NativeMouseInputListener;
-import org.sikuli.api.ScreenRegion;
+import org.sikuli.script.Region;
 import org.sikuli.recorder.event.ClickEvent;
 
 public class MouseEventDetector extends EventDetector 
@@ -15,13 +15,18 @@ implements NativeMouseInputListener {
 		//            System.out.println("Mosue Clicked: " + e.getClickCount());
 
 		
-		ScreenRegion region = getRegionOfInterest();
-		boolean isInsideROI = region.getBounds().contains(e.getX(), e.getY());			
+		Region region = getRegionOfInterest();
+		int rx = region.getX();
+		int ry = region.getY();
+		int rw = region.getW();
+		int rh = region.getH();
+		int ex = e.getX();
+		int ey = e.getY();
+		boolean isInsideROI = (ex >= rx && ex <= rx + rw && ey >= ry && ey <= ry + rh);			
 		if (isInsideROI){
-			
 			ClickEvent event = new ClickEvent();
-			event.setX(e.getX() - region.getBounds().x);
-			event.setY(e.getY() - region.getBounds().y);		
+			event.setX(ex - rx);
+			event.setY(ey - ry);		
 			event.setButton(e.getButton());
 			event.setClickCount(e.getClickCount());
 			eventDetected(event);

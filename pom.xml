@@ -146,11 +146,12 @@
 					<release>8</release>
 					<excludes>
 						<!-- Exclude legacy Piccolo UI viewers while migrating -->
-						<exclude>**/org/sikuli/slides/api/views/**</exclude>
-						<exclude>**/org/sikuli/slides/api/slideshow/**</exclude>
-						<!-- Exclude recorder and examples relying on legacy org.sikuli.api -->
-						<exclude>**/org/sikuli/recorder/**</exclude>
-						<exclude>**/org/sikuli/slides/driver/**</exclude>
+						<exclude>**/org/sikuli/slides/api/views/**/*.java</exclude>
+						<exclude>**/org/sikuli/slides/api/slideshow/**/*.java</exclude>
+						<!-- Exclude driver relying on legacy UI stack for now -->
+						<exclude>**/org/sikuli/slides/driver/**/*.java</exclude>
+						<!-- Exclude legacy recorder examples using org.sikuli.api -->
+						<exclude>**/org/sikuli/recorder/examples/**/*.java</exclude>
 					</excludes>
 				</configuration>
 			</plugin>
