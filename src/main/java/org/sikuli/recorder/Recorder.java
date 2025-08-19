@@ -140,15 +140,17 @@ public class Recorder {
 
 		    }
 			else{
-				// CTRL+SHIFT+2
-				if (e.getKeyCode() == NativeKeyEvent.VC_2 && isShiftPressed && isCtrlPressed){                
-					logger.trace("CTRL+SHIFT+2 is pressed");
+				// Accept either CMD (META) or CTRL with SHIFT on non-Windows platforms
+				boolean macLikeModifier = isShiftPressed && (isMetaPressed || isCtrlPressed);
+				// CMD/CTRL + SHIFT + 2
+				if (e.getKeyCode() == NativeKeyEvent.VC_2 && macLikeModifier){                
+					logger.trace("CMD/CTRL+SHIFT+2 is pressed");
 					startRecording();
 				}
 
-				// CTRL+SHIFT+ESC
-				if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE && isShiftPressed && isCtrlPressed){
-					logger.trace("CTRL+SHIFT+ESC is pressed");
+				// CMD/CTRL + SHIFT + ESC
+				if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE && macLikeModifier){
+					logger.trace("CMD/CTRL+SHIFT+ESC is pressed");
 					try {
 						GlobalScreen.unregisterNativeHook();
 					} catch (NativeHookException ex) {
@@ -174,8 +176,8 @@ public class Recorder {
 			System.out.println("Press [Alt-Shift-2] to start recording");
 			System.out.println("Press [Alt-Shift-ESC] to stop recording");
 		}else{
-			System.out.println("Press [Ctrl-Shift-2] to start recording");
-			System.out.println("Press [Ctrl-Shift-ESC] to stop recording");
+			System.out.println("Press [Command-Shift-2] (or [Ctrl-Shift-2]) to start recording");
+			System.out.println("Press [Command-Shift-ESC] (or [Ctrl-Shift-ESC]) to stop recording");
 		}	    
 	}
 }

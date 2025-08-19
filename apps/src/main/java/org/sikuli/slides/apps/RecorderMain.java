@@ -30,7 +30,42 @@ public class RecorderMain {
 		}
 	       
 
-		Recorder rec = new Recorder();
+		// Hardening for macOS: ensure JNativeHook can extract natives reliably when shaded
+        // Must be set BEFORE any reference to GlobalScreen/Recorder that triggers native load
+        String os = System.getProperty("os.name", "").toLowerCase();
+        if (os.contains("mac")) {
+            // Avoid headless mode and force a safe, writable temp directory
+            System.setProperty("java.awt.headless", "false");
+            // Use a canonical, world-writable tmp to avoid path/permission oddities
+            System.setProperty("java.io.tmpdir", "/tmp");
+        }
+        
+        Recorder rec = new Recorder();
+        final java.util.concurrent.atomic.AtomicBoolean finalized = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        // Shutdown hook to finalize PPTX on SIGINT (Ctrl-C)
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                if (finalized.get()) return;
+                finalized.set(true);
+                System.out.println("Shutdown detected (SIGINT/SIGTERM). Finalizing slides...");
+                try { com.github.kwhat.jnativehook.GlobalScreen.unregisterNativeHook(); } catch (Throwable ignored) {}
+                try { rec.stopRecording(); } catch (Throwable ignored) {}
+                java.io.File eventDir = rec.getEventDir();
+                java.io.File output;
+                if (Command.output == null)
+                    output = new java.io.File(eventDir.getName() + ".pptx");
+                else
+                    output = new java.io.File(Command.output);
+                if (!finalized.get()) {
+                    PPTXGenerator.generate(eventDir, output);
+                    System.out.println("Slides are saved as " + output);
+                    finalized.set(true);
+                }
+            } catch (Throwable t) {
+                // best effort
+            }
+        }, "RecorderMain-ShutdownHook"));
 		rec.printHelp();
 		
 		if (Command.bounds != null){
@@ -51,8 +86,11 @@ public class RecorderMain {
 		else
 			output = new File(Command.output);	
 						
-		PPTXGenerator.generate(eventDir, output);
-		System.out.println("Slides are saved as " + output);
+		if (!finalized.get()) {
+            PPTXGenerator.generate(eventDir, output);
+            System.out.println("Slides are saved as " + output);
+            finalized.set(true);
+        }
 	}
 
 	

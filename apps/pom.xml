@@ -45,6 +45,14 @@
             <artifactId>sikuli-slides-api</artifactId>
             <version>1.7</version>
         </dependency>
+        <!-- Explicitly include JNativeHook in the apps module so maven-shade
+             pulls in its native resources into the shaded JAR. Relying solely
+             on transitive inclusion via sikuli-slides-api may omit resources. -->
+        <dependency>
+            <groupId>com.github.kwhat</groupId>
+            <artifactId>jnativehook</artifactId>
+            <version>2.2.2</version>
+        </dependency>
 		<dependency>
 			<groupId>com.install4j</groupId>
 			<artifactId>api</artifactId>
