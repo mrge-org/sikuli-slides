@@ -13,13 +13,18 @@ import org.sikuli.slides.api.ExecutionFilter;
 import org.sikuli.slides.api.ExecutionFilter.Factory;
 import org.sikuli.slides.api.SlideExecutionException;
 import org.sikuli.slides.api.Slides;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 
 import com.google.common.base.Objects;
 import com.sampullara.cli.Args;
 import com.sampullara.cli.Argument;
 
 public class ExecuteMain {
+
+    private static final Logger LOG = Logger.getLogger(ExecuteMain.class);
 
     static final String EXE = "java -jar sikuli-slides-1.7.jar execute";
     static final String SYNTAX = "input [options]";
@@ -42,107 +47,153 @@ public class ExecuteMain {
 	@Argument(value = "range", description = "The range of the slide(s) to execute. e.g., \"1\" executes only slide 1, \"2-4\" executes slide 2 to 4, \"2-\" executes slide 2 till the end", required = false)
 	private String range = null;
 
-	@Argument(value = "bookmark", description = "The bookmark to start executing from.", required = false)
-	private String bookmark = null;
+    @Argument(value = "bookmark", description = "The bookmark to start executing from.", required = false)
+    private String bookmark = null;
 
-	@Argument(value = "log", description = "The level of log messages to print to the console. Choices are ALL, TRACE, DEBUG, INFO, WARN, ERROR, OFF (default: INFO).", required = false)
-	private String logLevel = "INFO";
+    @Argument(value = "log", description = "The level of log messages to print to the console. Choices are ALL, TRACE, DEBUG, INFO, WARN, ERROR, OFF (default: INFO).", required = false)
+    private String logLevel = "INFO";
 
-	
-	Context context;
-	URL url;
+    @Argument(value = "region", description = "Optional region within the selected screen to operate on, in the form x,y,w,h (relative to the selected -screen).", required = false)
+    private String regionRect = null;
+
+    @Argument(value = "use_awt_robot", description = "Use Java AWT Robot for mouse clicks instead of SikuliX (default: false)", required = false)
+    private boolean useAwtRobot = false;
+
+    Context context;
+    URL url;
     private boolean helpRequested = false;
 
-	public ExecutionFilter parseBookmark(){
-		if (bookmark == null)
-			return null;		
-		return Factory.createStartFromBookmarkFilter(bookmark);
-	}
+    public ExecutionFilter parseBookmark(){
+        if (bookmark == null)
+            return null;        
+        return Factory.createStartFromBookmarkFilter(bookmark);
+    }
 
-	public ExecutionFilter parseRange(){
-		if (range == null)
-			return null;
+    public ExecutionFilter parseRange(){
+        if (range == null)
+            return null;
 
-		String[] toks = range.split("-");		
-		if (toks.length == 1){
-			final int i = Integer.parseInt(toks[0]);				
-			// handles "2-"
-			if (range.endsWith("-")){
-				return Factory.createStartFromSlideFilter(i);				
-			}else{
-				// handles "2"
-				return Factory.createSingleSlideFilter(i);
-			}
-		} else if (toks.length == 2) {
-			final int i = Integer.parseInt(toks[0]);
-			final int j = Integer.parseInt(toks[1]);
-			return Factory.createRangeFilter(i,j);
-		}
-		
-		return null;
-	}
+        String[] toks = range.split("-");        
+        if (toks.length == 1){
+            final int i = Integer.parseInt(toks[0]);               
+            // handles "2-"
+            if (range.endsWith("-")){
+                return Factory.createStartFromSlideFilter(i);               
+            }else{
+                // handles "2"
+                return Factory.createSingleSlideFilter(i);
+            }
+        } else if (toks.length == 2) {
+            final int i = Integer.parseInt(toks[0]);
+            final int j = Integer.parseInt(toks[1]);
+            return Factory.createRangeFilter(i,j);
+        }
+        
+        return null;
+    }
 
-	public Context parseContext() {
-		Context context = new Context();
+    public Context parseContext() {
+        Context context = new Context();
 
-		// set parameter values
-		for (String param : params){
-			String[] toks = param.split("=");
-			if (toks.length == 2){
-				String name = toks[0];
-				String value = toks[1];
-				context.addParameter(name,  value);				
-			}
-		}
+        // initialize logging early so subsequent messages are visible
+        configureLogging(logLevel);
 
-		// set min score
-		if (minScore < 0 || minScore > 1){
-			throw new IllegalArgumentException("" + minScore + " is not a valid value for min_score. Please specify a score between 0 and 1.");
-		}		
-		context.setMinScore(minScore);
+        // set parameter values
+        for (String param : params){
+            String[] toks = param.split("=");
+            if (toks.length == 2){
+                String name = toks[0];
+                String value = toks[1];
+                context.addParameter(name,  value);                
+            }
+        }
 
-		// set wait time
-		context.setWaitTime(wait);
+        // set min score
+        if (minScore < 0 || minScore > 1){
+            throw new IllegalArgumentException("" + minScore + " is not a valid value for min_score. Please specify a score between 0 and 1.");
+        }        
+        context.setMinScore(minScore);
 
-		// set screen region (full screen of the selected monitor)
+        // set wait time
+        context.setWaitTime(wait);
+
+        // set screen region (full screen of the selected monitor)
         Region screenRegion = new Screen(screenId);
         context.setScreenRegion(screenRegion);
 
-		// set filter
-		ExecutionFilter slideSelector = parseRange();
-		if (slideSelector != null)
-			context.setExecutionFilter(slideSelector);
+        // set click implementation
+        context.setUseAwtRobot(useAwtRobot);
 
-		// set bookmark, which overrides filter if specified
-		slideSelector = parseBookmark();
-		if (slideSelector != null)
-			context.setExecutionFilter(slideSelector);
-								
-		configureLogback(logLevel);
-		
-		return context;
-	}
-	
-	void configureLogback(String logLevelString){
-//		Level logLevel = Level.toLevel(logLevelString);
-//		
-//		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-//		ConsoleAppender consoleAppender = new ConsoleAppender();
-//		consoleAppender.setContext(loggerContext);
-//
-//		PatternLayoutEncoder encoder = new PatternLayoutEncoder();
-//		encoder.setContext(loggerContext);		
-//		if (logLevel.isGreaterOrEqual(Level.DEBUG)){
-//			encoder.setPattern("%msg%n");
-//		}else{
-//			encoder.setPattern("[%thread] %-5level %logger{36} %msg%n");
-//		}		
-//		encoder.start();
-//		
-//		consoleAppender.setEncoder(encoder);	
-//	    consoleAppender.start();
-//
-//		Logger rootLogger = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        // optionally narrow to a sub-region relative to the selected screen
+        if (regionRect != null) {
+            try {
+                String[] p = regionRect.split(",");
+                if (p.length != 4) {
+                    throw new IllegalArgumentException("Invalid -region format. Expected x,y,w,h but got: " + regionRect);
+                }
+                int rx = Integer.parseInt(p[0].trim());
+                int ry = Integer.parseInt(p[1].trim());
+                int rw = Integer.parseInt(p[2].trim());
+                int rh = Integer.parseInt(p[3].trim());
+
+                int ax = screenRegion.getX() + rx;
+                int ay = screenRegion.getY() + ry;
+                Region sub = new Region(ax, ay, rw, rh);
+                context.setScreenRegion(sub);
+                LOG.info(String.format("using region relative=%s -> absolute=%s", regionRect, sub));
+            } catch (NumberFormatException nfe) {
+                throw new IllegalArgumentException("Invalid -region numbers: " + regionRect);
+            }
+        }
+
+        // enumerate screens to help users choose the right monitor id
+        try {
+            int n = Screen.getNumberScreens();
+            LOG.info("Detected screens: " + n);
+            for (int i = 0; i < n; i++) {
+                Region r = new Screen(i);
+                LOG.info(String.format("screen[%d]=%s", i, r));
+            }
+            LOG.info(String.format("selected screenId=%d region=%s use_awt_robot=%s", screenId, context.getScreenRegion(), useAwtRobot));
+        } catch (Throwable t) {
+            // best-effort logging; do not fail if screen enumeration throws
+            LOG.debug("Unable to enumerate screens: " + t.getMessage());
+        }
+
+        // set filter
+        ExecutionFilter slideSelector = parseRange();
+        if (slideSelector != null)
+            context.setExecutionFilter(slideSelector);
+
+        // set bookmark, which overrides filter if specified
+        slideSelector = parseBookmark();
+        if (slideSelector != null)
+            context.setExecutionFilter(slideSelector);
+        
+        return context;
+    }
+    
+    void configureLogging(String logLevelString){
+        try {
+            Level level = Level.toLevel(logLevelString, Level.INFO);
+            Logger root = Logger.getRootLogger();
+
+            // Ensure there is at least a console appender
+            if (!root.getAllAppenders().hasMoreElements()) {
+                PatternLayout layout = new PatternLayout("[%t] %-5p %c %m%n");
+                root.addAppender(new ConsoleAppender(layout));
+            }
+
+            root.setLevel(level);
+            // Align key categories with requested level
+            Logger.getLogger("org.sikuli").setLevel(level);
+            Logger.getLogger("org.sikuli.slides").setLevel(level);
+            Logger.getLogger("org.sikuli.script").setLevel(level);
+
+            System.out.println("Log4j configured: level=" + level);
+        } catch (Throwable t) {
+            System.err.println("Failed to configure Log4j: " + t.getMessage());
+        }
     }
     void parseArgs(String... args) throws IllegalArgumentException {
         List<String> rest = null;
