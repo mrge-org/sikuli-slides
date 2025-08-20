@@ -42,6 +42,9 @@ public class Context {
 	// how long to wait for a target in ms
 	private long waitTime = DEFAULT_WAIT_TIME;
 	
+	// whether to use Java AWT Robot for mouse clicks instead of SikuliX
+	private boolean useAwtRobot = false;
+	
 	/**
 	 * Construct a new context with a particular screen region.
 	 * 
@@ -100,6 +103,7 @@ public class Context {
 		setExecutionListener(copy.getExecutionListener());
 		setWaitTime(copy.getWaitTime());
 		setSlide(copy.getSlide());
+		setUseAwtRobot(copy.isUseAwtRobot());
 		parameters = Maps.newHashMap(copy.getParameters());
 	}
 	
@@ -175,7 +179,9 @@ public class Context {
 		return Objects.toStringHelper(this)
 				.add("minScore", minScore)
 				.add("parameter", parameters)				
-				.add("screenRegion", screenRegion).toString();
+				.add("screenRegion", screenRegion)
+				.add("useAwtRobot", useAwtRobot)
+				.toString();
 	}
 
 	/**
@@ -240,6 +246,21 @@ public class Context {
 	 */
 	public void setSlide(Slide slide) {
 		this.slide = slide;
+	}
+
+	/**
+	 * Whether to use Java AWT Robot for mouse clicks instead of SikuliX
+	 */
+	public boolean isUseAwtRobot() {
+		return useAwtRobot;
+	}
+	
+	/**
+	 * Set whether to use Java AWT Robot for mouse clicks
+	 * @param useAwtRobot true to use AWT Robot, false to use SikuliX default
+	 */
+	public void setUseAwtRobot(boolean useAwtRobot) {
+		this.useAwtRobot = useAwtRobot;
 	}
 
 }

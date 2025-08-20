@@ -222,7 +222,8 @@ public class DefaultInterpreter implements Interpreter {
     static class DoubleClickActionInterpreter implements Interpreter {
         @Override
         public Action interpret(Slide slide) {
-            SlideElement keywordElement = slide.select().ignoreCase().textStartsWith("doubleclick").first();
+            // accept variants: "doubleclick", "double click", "double-click"
+            SlideElement keywordElement = slide.select().textMatches("(?i)double\\s*-?click.*").first();
             if (keywordElement == null)
                 return null;        
             slide.remove(keywordElement);
