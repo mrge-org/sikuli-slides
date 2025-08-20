@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "mvn-build-apps",
+      "type": "shell",
+      "command": "mvn -q -f apps/pom.xml -DincludeScope=runtime -DoutputDirectory=target/dependency dependency:copy-dependencies package",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    }
+  ]
+}
