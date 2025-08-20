@@ -40,10 +40,13 @@ public class TargetAction extends ChainedAction {
         }
         // if not found and it's the first executed slide, try multi-scale fallbacks
         if (targetMatch == null && Boolean.TRUE.equals(context.getParameters().get("firstExecutedSlide"))) {
+            LOG.info("first slide fallback: starting multi-scale matching");
             float[] scales = new float[] {2.0f, 0.5f, 1.5f, 0.75f};
+            boolean scaledTried = false;
             for (float s : scales) {
                 try {
                     Pattern scaled = new Pattern(getPattern().getImage()).resize(s).similar(context.getMinScore());
+                    scaledTried = true;
                     LOG.info("retry match with scaled pattern factor=" + s);
                     try {
                         targetMatch = screenRegion.find(scaled);
@@ -55,7 +58,14 @@ public class TargetAction extends ChainedAction {
                         break;
                     }
                 } catch (Throwable t) {
-                    LOG.debug("scaled pattern failed to build for factor=" + s + ": " + t.getMessage());
+                    LOG.warn("scaled pattern build failed for factor=" + s + ": " + t.getMessage());
+                }
+            }
+            if (targetMatch == null) {
+                if (scaledTried) {
+                    LOG.info("multi-scale fallback did not find a match");
+                } else {
+                    LOG.warn("multi-scale fallback could not be attempted (no scaling support)");
                 }
             }
         }
