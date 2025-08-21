@@ -29,6 +29,7 @@ public class Recorder {
     private Region regionOfInterest;
 
     private MouseEventDetector mouseDetector;
+    private final CaptureContext captureContext = new CaptureContext();
 
     public Recorder(){
         mouseDetector = new MouseEventDetector();
@@ -37,6 +38,10 @@ public class Recorder {
         addEventDetector(d2);
         // Default to full primary screen
         setRegionOfInterest(new Screen());
+        // Thread capture context to detectors
+        for (EventDetector d : detectors) {
+            d.setCaptureContext(captureContext);
+        }
     }
 
     public File getEventDir() {
@@ -55,6 +60,7 @@ public class Recorder {
     private Thread fileStopper;
     public void addEventDetector(EventDetector d) {
         d.setWriter(writer);
+        d.setCaptureContext(captureContext);
         detectors.add(d);
     }
 
@@ -67,6 +73,7 @@ public class Recorder {
         System.out.println("Recording started.");
         System.out.println(" Temp dir: " + System.getProperty("java.io.tmpdir"));
         System.out.println(" Event folder: " + getEventDir().getAbsolutePath());
+        System.out.println(" Capture backend: " + captureContext.getBackend());
         if (regionOfInterest != null) {
             System.out.println(String.format(" ROI: x=%d y=%d w=%d h=%d",
                     regionOfInterest.getX(), regionOfInterest.getY(), regionOfInterest.getW(), regionOfInterest.getH()));
@@ -117,6 +124,10 @@ public class Recorder {
         for (EventDetector d : detectors){
             d.setRegionOfInterest(screenRegion);
         }
+    }
+
+    public void setCaptureBackend(CaptureContext.Backend backend) {
+        captureContext.setBackend(backend);
     }
 
     private void startConsoleStopper() {

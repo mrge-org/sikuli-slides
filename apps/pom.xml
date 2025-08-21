@@ -25,7 +25,7 @@
 	<artifactId>sikuli-slides</artifactId>
 	<name>Sikuli Slides Apps</name>
 	<url>http://lab.sikuli.org</url>
-	<version>1.7</version>
+	<version>1.7.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -43,7 +43,7 @@
         <dependency>
             <groupId>org.sikuli</groupId>
             <artifactId>sikuli-slides-api</artifactId>
-            <version>1.7</version>
+            <version>1.7.1-SNAPSHOT</version>
         </dependency>
         <!-- Explicitly include JNativeHook in the apps module so maven-shade
              pulls in its native resources into the shaded JAR. Relying solely

@@ -6,6 +6,7 @@ import java.util.List;
 import org.sikuli.script.Region;
 import org.sikuli.recorder.Recorder;
 import org.sikuli.recorder.pptx.PPTXGenerator;
+import org.sikuli.recorder.CaptureContext;
 
 import com.sampullara.cli.Args;
 import com.sampullara.cli.Argument;
@@ -41,6 +42,16 @@ public class RecorderMain {
         }
         
         Recorder rec = new Recorder();
+        // Capture backend selection
+        if (Command.captureBackend != null) {
+            try {
+                CaptureContext.Backend be = CaptureContext.Backend.valueOf(Command.captureBackend);
+                rec.setCaptureBackend(be);
+                System.out.println("Using capture backend: " + be);
+            } catch (IllegalArgumentException iae) {
+                System.out.println("Unknown capture backend '" + Command.captureBackend + "'. Valid: sikuli|awt_raw|both. Using default.");
+            }
+        }
         final java.util.concurrent.atomic.AtomicBoolean finalized = new java.util.concurrent.atomic.AtomicBoolean(false);
 
         // Shutdown hook to finalize PPTX on SIGINT (Ctrl-C)
@@ -104,7 +115,10 @@ public class RecorderMain {
 		
 		 @Argument(value = "region", description = "Screen region (x, y, width, height) to record (e.g., 100,100,400,400)", required = false, delimiter = ",")
 		 static private Integer[] bounds = null;		 
-	}
+		 
+		 @Argument(value = "recorder_capture", description = "Capture backend: sikuli | awt_raw | both", required = false)
+         static private String captureBackend = null;
+    }
 
        
 }
