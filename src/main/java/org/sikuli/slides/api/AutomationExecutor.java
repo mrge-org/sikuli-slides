@@ -67,6 +67,7 @@ class AutomationExecutor implements SlidesExecutor {
                     ex.setAction(e.getAction());
                     ex.setSlide(slide);
                     if (isFirstExecutedSlide && e.getAction() instanceof TargetAction){
+                        logWorkingDirectory();
                         saveFailedPatternImage((TargetAction) e.getAction(), slide.getNumber());
                         saveFailedSearchRegionImage(context, slide.getNumber());
                     }
@@ -84,11 +85,15 @@ class AutomationExecutor implements SlidesExecutor {
     private void saveFailedPatternImage(TargetAction action, int slideNumber){
         try {
             org.sikuli.script.Image img = action.getPattern().getImage();
-            if (img == null)
+            if (img == null){
+                logger.info("Pattern image is null; nothing to save for slide {}", slideNumber);
                 return;
+            }
             BufferedImage bi = img.get();
-            if (bi == null)
+            if (bi == null){
+                logger.info("Pattern image buffer is null; nothing to save for slide {}", slideNumber);
                 return;
+            }
             File dir = new File("target/failed-patterns");
             if (!dir.exists()) {
                 dir.mkdirs();
@@ -106,7 +111,10 @@ class AutomationExecutor implements SlidesExecutor {
             Region r = ctx.getScreenRegion();
             if (r == null) return;
             ScreenImage si = r.getScreen().capture(r);
-            if (si == null || si.getImage() == null) return;
+            if (si == null || si.getImage() == null){
+                logger.info("Search region capture returned null for slide {}", slideNumber);
+                return;
+            }
             File dir = new File("target/failed-search");
             if (!dir.exists()) {
                 dir.mkdirs();
@@ -116,6 +124,14 @@ class AutomationExecutor implements SlidesExecutor {
             logger.info("Saved failed search region image to {}", out.getAbsolutePath());
         } catch (IOException | RuntimeException t) {
             logger.warn("Could not save failed search region image for slide {}", slideNumber, t);
+        }
+    }
+
+    private void logWorkingDirectory(){
+        try {
+            String cwd = new File(".").getCanonicalPath();
+            logger.info("Current working directory: {}", cwd);
+        } catch (IOException ignored) {
         }
     }
 

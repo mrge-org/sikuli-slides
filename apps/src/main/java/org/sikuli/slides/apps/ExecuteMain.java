@@ -17,6 +17,7 @@ import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+import org.apache.log4j.LogManager;
 
 import com.google.common.base.Objects;
 import com.sampullara.cli.Args;
@@ -218,11 +219,17 @@ public class ExecuteMain {
         }catch(IllegalArgumentException e){
             System.err.println("Error parsing arguments: " + e.getMessage());
             Args.usage(this, EXE + " " + SYNTAX);
-            return;
+            // ensure clean shutdown on argument errors
+            try { LogManager.shutdown(); } catch (Throwable t) {}
+            System.exit(2);
+            return; // unreachable, but keeps compiler happy
         }
 
         if (helpRequested){
             Args.usage(this, EXE + " " + SYNTAX);
+            // help path: exit success
+            try { LogManager.shutdown(); } catch (Throwable t) {}
+            System.exit(0);
             return;
         }
         
@@ -233,8 +240,15 @@ public class ExecuteMain {
             if (e.getSlide() != null){
                 System.err.print("On slide no. " + e.getSlide().getNumber());
                 System.err.println(" Failed to execute " + e.getAction());
-            }            
-        }    
+            }
+            // make sure to terminate on failure (avoid lingering non-daemon threads)
+            try { LogManager.shutdown(); } catch (Throwable t) {}
+            System.exit(1);
+            return;
+        }
+        // success path: terminate explicitly
+        try { LogManager.shutdown(); } catch (Throwable t) {}
+        System.exit(0);
     }
 
     public static void main(String... args) {

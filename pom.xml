@@ -67,14 +67,16 @@
 			<groupId>com.sikulix</groupId>
 			<artifactId>sikulixapi</artifactId>
 			<version>2.0.6-SNAPSHOT</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-nop</artifactId>
+				</exclusion>
+				<!-- If needed to avoid clashes, you can also exclude other SLF4J impls here -->
+			</exclusions>
 		</dependency>
 		<!-- Ensure OpenCV JNI loader (with embedded natives under sikulixlibs/) is present at runtime -->
-		<dependency>
-			<groupId>com.sikulix</groupId>
-			<artifactId>sikulix2opencv</artifactId>
-			<version>4.5.4</version>
-			<classifier>complete</classifier>
-		</dependency>
+
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>

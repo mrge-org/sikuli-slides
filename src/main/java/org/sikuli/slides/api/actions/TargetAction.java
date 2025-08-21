@@ -33,15 +33,26 @@ public class TargetAction extends ChainedAction {
         // park mouse away from region to avoid cursor affecting match
         parkMouse(screenRegion);
         Match targetMatch = null;
+        // log pattern info to help diagnose scaling issues
         try {
-            targetMatch = screenRegion.find(searchPattern);
+            if (getPattern() != null && getPattern().getImage() != null && getPattern().getImage().get() != null) {
+                int pw = getPattern().getImage().get().getWidth();
+                int ph = getPattern().getImage().get().getHeight();
+                LOG.info("pattern pixel size=" + pw + "x" + ph + " min_score=" + context.getMinScore());
+            }
+        } catch (Throwable ignore) {}
+        try {
+            // honor configured wait time (ms -> seconds)
+            double timeout = Math.max(0, context.getWaitTime() / 1000.0);
+            targetMatch = screenRegion.wait(searchPattern, timeout);
         } catch (org.sikuli.script.FindFailed e) {
             // target not found
         }
         // if not found and it's the first executed slide, try multi-scale fallbacks
         if (targetMatch == null && Boolean.TRUE.equals(context.getParameters().get("firstExecutedSlide"))) {
             LOG.info("first slide fallback: starting multi-scale matching");
-            float[] scales = new float[] {2.0f, 0.5f, 1.5f, 0.75f};
+            // Cover common Retina/simulator factors: 2x, 3x and corresponding downsizes
+            float[] scales = new float[] {2.0f, 3.0f, 1.5f, 0.75f, 0.5f, 0.33f, 1.25f, 0.8f};
             boolean scaledTried = false;
             for (float s : scales) {
                 try {
@@ -49,7 +60,8 @@ public class TargetAction extends ChainedAction {
                     scaledTried = true;
                     LOG.info("retry match with scaled pattern factor=" + s);
                     try {
-                        targetMatch = screenRegion.find(scaled);
+                        double timeout = Math.max(0, context.getWaitTime() / 1000.0);
+                        targetMatch = screenRegion.wait(scaled, timeout);
                     } catch (org.sikuli.script.FindFailed e) {
                         // continue
                     }
