@@ -116,11 +116,12 @@ public class TargetAction extends ChainedAction {
         // Prominent notice to avoid user interaction during automated run
         try {
             System.out.println();
-            System.out.println("DO NOT USE KEYBOARD AND MOUSE UNTIL TEST EXECUTION END!");
+            System.out.println("DO NOT USE THE KEYBOARD OR MOUSE UNTIL TEST EXECUTION ENDS!");
             System.out.println();
         } catch (Throwable t) {
             // ignore console issues
         }
+        try {
         LOG.info("DEBUG: TargetAction.execute() called - checking for NCC fallback integration");
         LOG.info("DEBUG: Context.getMinScore() = " + context.getMinScore());
         Pattern searchPattern = getPattern().similar(context.getMinScore());
@@ -226,6 +227,15 @@ public class TargetAction extends ChainedAction {
         }else{
             LOG.info("no match in region " + screenRegion + " with min_score=" + context.getMinScore() + String.format(" elapsed=%.3fs", (t1 - t0)/1e9));
             throw new ActionExecutionException("Unable to locate the target on the screen", this);
+        }
+        } finally {
+            try {
+                System.out.println();
+                System.out.println("You may now use the keyboard and mouse. Test execution finished.");
+                System.out.println();
+            } catch (Throwable t) {
+                // ignore console issues
+            }
         }
     }
 
