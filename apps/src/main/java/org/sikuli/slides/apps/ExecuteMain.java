@@ -57,6 +57,8 @@ public class ExecuteMain {
     @Argument(value = "region", description = "Optional region within the selected screen to operate on, in the form x,y,w,h (relative to the selected -screen).", required = false)
     private String regionRect = null;
 
+    // Hint region is computed automatically from slide content; no CLI flag.
+
     @Argument(value = "use_awt_robot", description = "Use Java AWT Robot for mouse clicks instead of SikuliX (default: false)", required = false)
     private boolean useAwtRobot = false;
 
@@ -152,6 +154,8 @@ public class ExecuteMain {
                 throw new IllegalArgumentException("Invalid -region numbers: " + regionRect);
             }
         }
+
+        // no CLI hint; any prioritized search region will be computed by actions.
 
         // enumerate screens to help users choose the right monitor id
         try {

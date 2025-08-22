@@ -11,6 +11,9 @@ import org.sikuli.script.Region;
 import org.sikuli.script.Match;
 import org.sikuli.script.Finder;
 import org.sikuli.slides.api.Context;
+import org.sikuli.slides.api.models.Slide;
+import org.sikuli.slides.api.models.SlideElement;
+import org.sikuli.slides.api.models.Selector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -214,7 +217,16 @@ public class TargetAction extends ChainedAction {
         // Enforce strict 1:1 single-scale matching only (no SikuliX internal multi-scale)
         // Always use our NCC implementation to avoid any implicit scaling.
         LOG.info("single-scale mode: using NCC-only search (no SikuliX find/wait)");
-        targetMatch = tryNCCFallback(screenRegion, context.getMinScore());
+        // Compute a hidden prioritized hint region from slide content (if possible)
+        Region hintRegion = null;
+        try {
+            BufferedImage patImg = getPattern() != null && getPattern().getImage() != null ? getPattern().getImage().get() : null;
+            hintRegion = computeAutoHintRegion(context, patImg);
+            if (hintRegion != null) {
+                LOG.info("auto hint region computed: " + hintRegion);
+            }
+        } catch (Throwable ignored) {}
+        targetMatch = tryNCCFallback(screenRegion, context.getMinScore(), hintRegion);
         long t1 = System.nanoTime();
         if (targetMatch != null){
             Location c = targetMatch.getTarget();
@@ -340,27 +352,138 @@ public class TargetAction extends ChainedAction {
         }
     }
 
-    private Match tryNCCFallback(Region screenRegion, double minScore) {
+    // Derive a prioritized hint region from the slide's target element.
+    // Maps slide element bounds (EMU) to screen coordinates, expands with padding, and validates size vs. pattern.
+    private Region computeAutoHintRegion(Context context, BufferedImage patternImage) {
+        try {
+            Slide slide = context.getSlide();
+            Region screenRegion = context.getScreenRegion();
+            if (slide == null || screenRegion == null) return null;
+
+            SlideElement targetElement = Selector.select(slide.getElements()).isTarget().first();
+            if (targetElement == null) return null;
+
+            int slideW = Math.max(1, slide.getWidth());
+            int slideH = Math.max(1, slide.getHeight());
+
+            double xmin = Math.max(0.0, Math.min(1.0, (double) targetElement.getOffx() / slideW));
+            double ymin = Math.max(0.0, Math.min(1.0, (double) targetElement.getOffy() / slideH));
+            double xmax = Math.max(0.0, Math.min(1.0, (double) (targetElement.getOffx() + targetElement.getCx()) / slideW));
+            double ymax = Math.max(0.0, Math.min(1.0, (double) (targetElement.getOffy() + targetElement.getCy()) / slideH));
+
+            int baseX = screenRegion.getX() + (int) Math.round(xmin * screenRegion.getW());
+            int baseY = screenRegion.getY() + (int) Math.round(ymin * screenRegion.getH());
+            int baseW = Math.max(0, (int) Math.round((xmax - xmin) * screenRegion.getW()));
+            int baseH = Math.max(0, (int) Math.round((ymax - ymin) * screenRegion.getH()));
+
+            if (baseW <= 0 || baseH <= 0) return null;
+
+            // Padding: expand by 10% of base size, at least 20px, and at least half the pattern size (if available)
+            int padX = Math.max(20, (int) Math.round(0.1 * baseW));
+            int padY = Math.max(20, (int) Math.round(0.1 * baseH));
+            if (patternImage != null) {
+                padX = Math.max(padX, patternImage.getWidth() / 2);
+                padY = Math.max(padY, patternImage.getHeight() / 2);
+            }
+
+            int hx = baseX - padX;
+            int hy = baseY - padY;
+            int hw = baseW + 2 * padX;
+            int hh = baseH + 2 * padY;
+
+            // Constrain to the current screenRegion bounds
+            int ix = Math.max(screenRegion.getX(), hx);
+            int iy = Math.max(screenRegion.getY(), hy);
+            int ix2 = Math.min(screenRegion.getX() + screenRegion.getW(), hx + hw);
+            int iy2 = Math.min(screenRegion.getY() + screenRegion.getH(), hy + hh);
+            int iw = Math.max(0, ix2 - ix);
+            int ih = Math.max(0, iy2 - iy);
+            if (iw <= 0 || ih <= 0) return null;
+
+            // Ensure the pattern can fit in the hint region
+            if (patternImage != null && (patternImage.getWidth() > iw || patternImage.getHeight() > ih)) {
+                // Try to minimally expand within the screenRegion to fit the pattern centered on the base rect
+                int needW = Math.max(iw, patternImage.getWidth());
+                int needH = Math.max(ih, patternImage.getHeight());
+                int cx = baseX + baseW / 2;
+                int cy = baseY + baseH / 2;
+                int nx = Math.max(screenRegion.getX(), Math.min(cx - needW / 2, screenRegion.getX() + screenRegion.getW() - needW));
+                int ny = Math.max(screenRegion.getY(), Math.min(cy - needH / 2, screenRegion.getY() + screenRegion.getH() - needH));
+                iw = Math.max(0, Math.min(needW, screenRegion.getX() + screenRegion.getW() - nx));
+                ih = Math.max(0, Math.min(needH, screenRegion.getY() + screenRegion.getH() - ny));
+                ix = nx;
+                iy = ny;
+                if (patternImage.getWidth() > iw || patternImage.getHeight() > ih) {
+                    // still cannot fit
+                    return null;
+                }
+            }
+
+            return new Region(ix, iy, iw, ih);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private Match tryNCCFallback(Region screenRegion, double minScore, Region hintRegion) {
         try {
             LOG.info("NCC fallback: starting custom pattern matching");
-            BufferedImage regionImage = screenRegion.getScreen().capture(screenRegion).getImage();
             BufferedImage patternImage = getPattern().getImage().get();
-            
+
+            // If provided, intersect hint with screenRegion and ensure it can contain the pattern
+            Region prioritized = null;
+            if (hintRegion != null) {
+                int ix = Math.max(screenRegion.getX(), hintRegion.getX());
+                int iy = Math.max(screenRegion.getY(), hintRegion.getY());
+                int ix2 = Math.min(screenRegion.getX() + screenRegion.getW(), hintRegion.getX() + hintRegion.getW());
+                int iy2 = Math.min(screenRegion.getY() + screenRegion.getH(), hintRegion.getY() + hintRegion.getH());
+                int iw = Math.max(0, ix2 - ix);
+                int ih = Math.max(0, iy2 - iy);
+                if (iw > 0 && ih > 0) {
+                    prioritized = new Region(ix, iy, iw, ih);
+                    // pattern must fit
+                    if (patternImage.getWidth() > iw || patternImage.getHeight() > ih) {
+                        LOG.info("hint region too small for pattern; skipping hint");
+                        prioritized = null;
+                    }
+                } else {
+                    LOG.info("hint region does not intersect search region; skipping hint");
+                }
+            }
+
+            // 1) Try prioritized hint region first
+            if (prioritized != null) {
+                LOG.info("NCC fallback: trying hint region first: " + prioritized);
+                BufferedImage hintImage = prioritized.getScreen().capture(prioritized).getImage();
+                NCCResult r = findWithNCC(hintImage, patternImage, minScore);
+                if (r != null) {
+                    int centerX = prioritized.getX() + r.x + patternImage.getWidth() / 2;
+                    int centerY = prioritized.getY() + r.y + patternImage.getHeight() / 2;
+                    Match match = new Match(new Region(centerX - patternImage.getWidth()/2, centerY - patternImage.getHeight()/2,
+                                                       patternImage.getWidth(), patternImage.getHeight()), r.ncc);
+                    match.setTarget(centerX, centerY);
+                    LOG.info("NCC fallback: found in hint region at " + match.getTarget() + " score=" + match.getScore());
+                    return match;
+                }
+                LOG.info("NCC fallback: no match in hint region (>= " + minScore + ")");
+            }
+
+            // 2) Fallback to full region
+            BufferedImage regionImage = screenRegion.getScreen().capture(screenRegion).getImage();
             NCCResult nccResult = findWithNCC(regionImage, patternImage, minScore);
             if (nccResult != null) {
                 LOG.info("NCC fallback: found match with score=" + nccResult.ncc + " at (" + nccResult.x + "," + nccResult.y + ")");
-                // Create a Match object from NCC result
                 int centerX = screenRegion.getX() + nccResult.x + patternImage.getWidth() / 2;
                 int centerY = screenRegion.getY() + nccResult.y + patternImage.getHeight() / 2;
-                Match match = new Match(new Region(centerX - patternImage.getWidth()/2, centerY - patternImage.getHeight()/2, 
+                Match match = new Match(new Region(centerX - patternImage.getWidth()/2, centerY - patternImage.getHeight()/2,
                                                   patternImage.getWidth(), patternImage.getHeight()), nccResult.ncc);
                 match.setTarget(centerX, centerY);
                 LOG.info("NCC fallback: created match at " + match.getTarget() + " score=" + match.getScore());
                 return match;
-            } else {
-                LOG.info("NCC fallback: no match found above threshold " + minScore);
-                return null;
             }
+
+            LOG.info("NCC fallback: no match found above threshold " + minScore);
+            return null;
         } catch (Throwable ex) {
             LOG.warn("NCC fallback failed: " + ex.getMessage());
             return null;

@@ -32,12 +32,13 @@ Expected output includes:
 2) Build apps (shaded JAR):
 ```bash
 # from apps/ directory
-mvn -DskipTests=true clean package
+mvn -Dmaven.test.skip=true clean package
 ```
 Produces:
 - `apps/target/sikuli-slides-1.7.1-SNAPSHOT.jar` (shaded)
 
 Notes:
+- Prefer `-Dmaven.test.skip=true` when building locally to avoid compiling or running tests (some legacy tests reference removed classes). `-DskipTests=true` only skips execution but still compiles tests, which can fail.
 - You may see a warning about `install4j` `systemPath` in `apps/pom.xml` — OK for now; we will clean this later.
 
 ## Run
@@ -65,7 +66,7 @@ java -cp apps/target/sikuli-slides-1.7.1-SNAPSHOT.jar org.sikuli.slides.apps.Exe
 Build (apps module):
 ```bash
 # from apps/
-mvn -DskipTests=true clean package
+mvn -Dmaven.test.skip=true clean package
 ```
 
 Run against saved failure artifacts:
