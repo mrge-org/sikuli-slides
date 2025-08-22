@@ -25,7 +25,7 @@ mvn -Dmaven.test.skip=true package install
 ```
 Expected output includes:
 ```
-[INFO] Installing .../target/sikuli-slides-api-1.7.1-SNAPSHOT.jar to ~/.m2/repository/.../sikuli-slides-api-1.7.1-SNAPSHOT.jar
+[INFO] Installing .../target/sikuli-slides-api-1.7.1-SNAPSHOT.jar to <your local Maven repository>/.../sikuli-slides-api-1.7.1-SNAPSHOT.jar
 [INFO] BUILD SUCCESS
 ```
 
@@ -47,6 +47,11 @@ Notes:
 ./build-all.sh
 ```
 Produces both the API JAR (installed to your local Maven repository — default `~/.m2/repository` unless overridden) and the shaded apps JAR.
+
+Tip: print your local Maven repository path
+```bash
+mvn help:evaluate -Dexpression=settings.localRepository -q -DforceStdout
+```
 
 ## Run
 - **Recorder** (new option: selectable capture backend):
