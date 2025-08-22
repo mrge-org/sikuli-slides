@@ -60,6 +60,9 @@ public class ExecuteMain {
     @Argument(value = "use_awt_robot", description = "Use Java AWT Robot for mouse clicks instead of SikuliX (default: false)", required = false)
     private boolean useAwtRobot = false;
 
+    @Argument(value = "exhaustive", description = "Perform a single exhaustive scan without time-based waiting/retries (default: false)", required = false)
+    private boolean exhaustive = false;
+
     Context context;
     URL url;
     private boolean helpRequested = false;
@@ -108,6 +111,9 @@ public class ExecuteMain {
                 context.addParameter(name,  value);                
             }
         }
+
+        // pass explicit flags as parameters for downstream consumers
+        context.addParameter("exhaustive", exhaustive);
 
         // set min score
         if (minScore < 0 || minScore > 1){
@@ -252,8 +258,94 @@ public class ExecuteMain {
     }
 
     public static void main(String... args) {
+        // Ensure SikuliX native libs are available early (before any org.sikuli.* classes are initialized)
+        ensureSikuliXLibs();
+        // Ensure background thread failures cause a clean process exit
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+            System.err.println("Uncaught exception in thread '" + t.getName() + "': " + e);
+            e.printStackTrace(System.err);
+            try { LogManager.shutdown(); } catch (Throwable ignored) {}
+            System.exit(1);
+        });
         ExecuteMain main = new ExecuteMain();		
         main.execute(args);
+    }
+
+    // Try to auto-set the SikuliX native libs folder on Windows when not provided via -Dsikulixlibs
+    private static void ensureSikuliXLibs() {
+        try {
+            String propPath = System.getProperty("sikulixlibs");
+            if (propPath != null) {
+                // User provided path; still try to proactively load OpenCV to fail fast with a clearer message
+                File f = new File(propPath);
+                if (f.isDirectory()) {
+                    File[] dlls = f.listFiles((dir, name) -> name.toLowerCase().startsWith("opencv_java") && name.toLowerCase().endsWith(".dll"));
+                    if (dlls != null && dlls.length > 0) {
+                        try {
+                            File chosen = dlls[0];
+                            System.out.println("Attempting to load OpenCV: " + chosen.getAbsolutePath());
+                            System.load(chosen.getAbsolutePath());
+                            System.out.println("Loaded OpenCV successfully: " + chosen.getName());
+                        } catch (UnsatisfiedLinkError ule) {
+                            System.err.println("Warning: Failed to pre-load OpenCV DLL from -Dsikulixlibs: " + ule.getMessage());
+                        } catch (Throwable t2) {
+                            System.err.println("Warning: Unexpected error while pre-loading OpenCV from -Dsikulixlibs: " + t2.getMessage());
+                        }
+                    } else {
+                        System.err.println("Warning: No opencv_java*.dll found under -Dsikulixlibs=" + f.getAbsolutePath());
+                    }
+                } else {
+                    System.err.println("Warning: -Dsikulixlibs path does not exist: " + f.getAbsolutePath());
+                }
+                return; // user provided
+            }
+            String os = System.getProperty("os.name", "").toLowerCase();
+            if (!os.contains("win")) {
+                return; // only intervene on Windows
+            }
+            File base = getJarDir();
+            String[] candidates = new String[] {
+                "sikulixlibs\\windows\\libs",
+                "sikulixlibs\\win\\libs",
+                "sikulixlibs\\windows\\x86_64",
+                "sikulixlibs\\windows"
+            };
+            for (String rel : candidates) {
+                File f = new File(base, rel);
+                if (f.isDirectory()) {
+                    // Basic sanity: see if there is any opencv dll inside
+                    File[] dlls = f.listFiles((dir, name) -> name.toLowerCase().startsWith("opencv_java") && name.toLowerCase().endsWith(".dll"));
+                    if (dlls != null && dlls.length > 0) {
+                        System.setProperty("sikulixlibs", f.getAbsolutePath());
+                        System.out.println("SikuliX libs path set to: " + f.getAbsolutePath());
+                        // Proactively try to load the first matching OpenCV DLL to avoid classloader resolution issues
+                        try {
+                            File chosen = dlls[0];
+                            System.out.println("Attempting to load OpenCV: " + chosen.getAbsolutePath());
+                            System.load(chosen.getAbsolutePath());
+                            System.out.println("Loaded OpenCV successfully: " + chosen.getName());
+                        } catch (UnsatisfiedLinkError ule) {
+                            System.err.println("Warning: Failed to pre-load OpenCV DLL: " + ule.getMessage());
+                        } catch (Throwable t2) {
+                            System.err.println("Warning: Unexpected error while pre-loading OpenCV: " + t2.getMessage());
+                        }
+                        break;
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            // best effort; do not fail
+        }
+    }
+
+    private static File getJarDir() {
+        try {
+            java.net.URL url = ExecuteMain.class.getProtectionDomain().getCodeSource().getLocation();
+            java.io.File loc = new java.io.File(url.toURI());
+            return loc.isFile() ? loc.getParentFile() : loc;
+        } catch (Throwable t) {
+            return new java.io.File(".");
+        }
     }
 
     private static URL parseInputAsURL(String input) {

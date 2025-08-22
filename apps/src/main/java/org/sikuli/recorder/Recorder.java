@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.awt.Toolkit;
 
 import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;
@@ -53,6 +54,7 @@ public class Recorder {
     }
 
     private List<EventDetector> detectors = Lists.newArrayList();
+    private ScreenshotEventDetector screenshotDetectorRef = null;
 
     DefaultEventWriter writer = new DefaultEventWriter();
     private final AtomicBoolean hasStarted = new AtomicBoolean(false);
@@ -62,6 +64,9 @@ public class Recorder {
         d.setWriter(writer);
         d.setCaptureContext(captureContext);
         detectors.add(d);
+        if (d instanceof ScreenshotEventDetector) {
+            this.screenshotDetectorRef = (ScreenshotEventDetector) d;
+        }
     }
 
     public void startRecording(){
@@ -180,6 +185,26 @@ public class Recorder {
 
     CountDownLatch escapeSignal = new CountDownLatch(1);
 
+    class GuidedKeyListener implements NativeKeyListener {
+        private Logger logger = LoggerFactory.getLogger(GuidedKeyListener.class);
+        public void nativeKeyPressed(NativeKeyEvent e) {
+            int code = e.getKeyCode();
+            if (code == NativeKeyEvent.VC_ENTER) {
+                try { Toolkit.getDefaultToolkit().beep(); } catch (Throwable ignored) {}
+                if (screenshotDetectorRef != null) {
+                    try { screenshotDetectorRef.captureOnce(); } catch (Throwable t) { logger.warn("captureOnce failed", t); }
+                }
+            }
+            if (code == NativeKeyEvent.VC_ESCAPE) {
+                logger.info("ESC pressed - finishing guided recording");
+                try { GlobalScreen.unregisterNativeHook(); } catch (Throwable ignored) {}
+                escapeSignal.countDown();
+            }
+        }
+        public void nativeKeyReleased(NativeKeyEvent e) {}
+        public void nativeKeyTyped(NativeKeyEvent e) {}
+    }
+
     public void stopRecording(){
         for (EventDetector d : detectors){
             d.stop();
@@ -211,6 +236,30 @@ public class Recorder {
 
         stopRecording();
         System.out.println("Recording is stopped.");
+    }
+
+    public void startGuided() {
+        System.out.println("Start Recording (guided mode): Enter=capture, Esc=finish");
+        // Start only MouseEventDetector(s)
+        for (EventDetector d : detectors) {
+            if (d instanceof MouseEventDetector) {
+                d.start();
+            }
+        }
+        try {
+            GlobalScreen.registerNativeHook();
+        } catch (NativeHookException ex) {
+            System.err.println("There was a problem registering the native hook.");
+            System.err.println(ex.getMessage());
+            return;
+        }
+        GlobalScreen.addNativeKeyListener(new GuidedKeyListener());
+        try {
+            escapeSignal.await();
+        } catch (InterruptedException e) {
+        }
+        stopRecording();
+        System.out.println("Guided recording is stopped.");
     }
 
     boolean isWindows(){

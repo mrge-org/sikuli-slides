@@ -57,6 +57,35 @@ java -cp apps/target/sikuli-slides-1.7.1-SNAPSHOT.jar org.sikuli.slides.apps.Exe
   --input out.pptx
 ```
 
+### Pattern/Region verifier (no-scaling)
+- Minimal tool to verify a saved pattern against a saved region with strict 1:1 matching (no scaling, no preprocessing).
+- Class: `org.sikuli.slides.apps.VerifyPatternInRegion`
+- Prints best location and scores (SSD lower=better, NCC [-1..1] higher=better). Optional visualization output.
+
+Build (apps module):
+```bash
+# from apps/
+mvn -DskipTests=true clean package
+```
+
+Run against saved failure artifacts:
+```bash
+java -cp apps/target/classes org.sikuli.slides.apps.VerifyPatternInRegion \
+  "/Users/gpetrov/mirror_src/sikuli-slides-PoC/target/failed-search/slide-1-region.png" \
+  "/Users/gpetrov/mirror_src/sikuli-slides-PoC/target/failed-patterns/slide-1-pattern.png" \
+  "/Users/gpetrov/mirror_src/sikuli-slides-PoC/target/verify-slide-1.png"
+
+# Alternatively using the shaded jar on the classpath
+java -cp apps/target/sikuli-slides-1.7.1-SNAPSHOT.jar org.sikuli.slides.apps.VerifyPatternInRegion \
+  "/Users/gpetrov/mirror_src/sikuli-slides-PoC/target/failed-search/slide-1-region.png" \
+  "/Users/gpetrov/mirror_src/sikuli-slides-PoC/target/failed-patterns/slide-1-pattern.png" \
+  "/Users/gpetrov/mirror_src/sikuli-slides-PoC/target/verify-slide-1.png"
+```
+
+Notes:
+- Arguments order is `<region.png> <pattern.png> [out-visual.png]`.
+- No thresholding/exit code logic is applied; this is diagnostic-only.
+
 ## Recorder diagnostics
 - `ScreenshotEventDetector` writes probe artifacts when capture dimensions change:
   - `probe.awt.png`, `probe.sikuli.png`

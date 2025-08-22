@@ -4,6 +4,9 @@ import java.awt.image.BufferedImage;
 import java.awt.AWTException;
 import java.awt.Rectangle;
 import java.awt.Robot;
+import java.awt.MouseInfo;
+import java.awt.Point;
+
 import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
@@ -18,7 +21,9 @@ public class ScreenshotEventDetector extends EventDetector {
     public void stop(){
         running = false;
         try {
-            capturingThread.join();
+            if (capturingThread != null) {
+                capturingThread.join();
+            }
         } catch (InterruptedException e) {
         }
     }
@@ -35,7 +40,7 @@ public class ScreenshotEventDetector extends EventDetector {
             public void run(){
                 while (running){
                     running = true;
-                    performScreenCapture();
+                    performScreenCapture(false);
                     try {
                         Thread.sleep(100);
                     } catch (InterruptedException e) {
@@ -47,12 +52,32 @@ public class ScreenshotEventDetector extends EventDetector {
         capturingThread.start();
     }
 
-    private void performScreenCapture(){
+    // Guided mode: perform a single capture on demand (no background loop)
+    public void captureOnce() {
+        performScreenCapture(true);
+    }
+
+    private void performScreenCapture(boolean hideCursor){
         Region roi = getRegionOfInterest();
         int rx = roi.getX(), ry = roi.getY(), rw = roi.getW(), rh = roi.getH();
         BufferedImage imgSikuli = null;
         BufferedImage imgAwt = null;
         try {
+            // Optionally move cursor out of ROI during capture and restore afterwards
+            Point prevLoc = null;
+            Robot mover = null;
+            if (hideCursor) {
+                try {
+                    prevLoc = MouseInfo.getPointerInfo().getLocation();
+                    mover = new Robot();
+                    // move far to bottom-right of ROI to avoid cursor in capture
+                    int mx = Math.max(0, rx + rw + 200);
+                    int my = Math.max(0, ry + rh + 200);
+                    mover.mouseMove(mx, my);
+                    // small wait for cursor to settle
+                    try { Thread.sleep(40); } catch (InterruptedException ignored) {}
+                } catch (Throwable ignored) {}
+            }
             CaptureContext.Backend backend = getCaptureContext().getBackend();
             // Capture using selected backend(s)
             if (backend == CaptureContext.Backend.sikuli || backend == CaptureContext.Backend.both) {
@@ -96,6 +121,14 @@ public class ScreenshotEventDetector extends EventDetector {
             ScreenShotEvent e = new ScreenShotEvent();
             e.setImage(imageToEmit);
             eventDetected(e);
+            // restore cursor
+            if (hideCursor) {
+                try {
+                    if (mover != null && prevLoc != null) {
+                        mover.mouseMove(prevLoc.x, prevLoc.y);
+                    }
+                } catch (Throwable ignored) {}
+            }
         } catch (Throwable t) {
             // swallow errors to keep detector running
         }

@@ -29,7 +29,12 @@ public class RetryAction extends ChainedAction {
 	 */
 	public void execute(Context context) throws ActionExecutionException{
 		Action action = checkNotNull(getChild());
-		
+        // In exhaustive mode, run only once without retries
+        if (Boolean.TRUE.equals(context.getParameters().get("exhaustive"))) {
+            action.execute(context);
+            return;
+        }
+        
 		// start a timer that will set the timesup flag to true
 		Timer timer = new Timer();
 		TimerTask task = new TimerTask(){

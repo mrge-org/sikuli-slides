@@ -1,6 +1,9 @@
 package org.sikuli.slides.api.actions;
 
 import java.awt.Robot;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import javax.imageio.ImageIO;
 
 import org.sikuli.script.Location;
 import org.sikuli.script.Pattern;
@@ -30,6 +33,7 @@ public class TargetAction extends ChainedAction {
 	public void execute(Context context) throws ActionExecutionException {
         Pattern searchPattern = getPattern().similar(context.getMinScore());
         Region screenRegion = context.getScreenRegion();
+        boolean exhaustive = Boolean.TRUE.equals(context.getParameters().get("exhaustive"));
         // park mouse away from region to avoid cursor affecting match
         parkMouse(screenRegion);
         Match targetMatch = null;
@@ -39,17 +43,80 @@ public class TargetAction extends ChainedAction {
                 int pw = getPattern().getImage().get().getWidth();
                 int ph = getPattern().getImage().get().getHeight();
                 LOG.info("pattern pixel size=" + pw + "x" + ph + " min_score=" + context.getMinScore());
+                if (exhaustive) {
+                    int rw = screenRegion.getW();
+                    int rh = screenRegion.getH();
+                    long positions = Math.max(0L, (long)(rw - pw + 1)) * Math.max(0L, (long)(rh - ph + 1));
+                    LOG.info("exhaustive=true region=" + rw + "x" + rh + " positions=" + positions);
+                }
+                try {
+                    boolean hasAlpha = getPattern().getImage().get().getColorModel().hasAlpha();
+                    LOG.debug("pattern hasAlpha=" + hasAlpha);
+                    // Save the exact pattern used for matching
+                    BufferedImage patImg = getPattern().getImage().get();
+                    File outDir = new File("target/debug/presearch");
+                    if (!outDir.exists()) { outDir.mkdirs(); }
+                    File patFile = new File(outDir, String.format("pattern_%dx%d.png", pw, ph));
+                    ImageIO.write(patImg, "png", patFile);
+                    int p0 = patImg.getRGB(Math.min(0, pw-1), Math.min(0, ph-1));
+                    long pchk = 0;
+                    for (int y = 0; y < ph; y+=Math.max(1, ph/10)) {
+                        for (int x = 0; x < pw; x+=Math.max(1, pw/10)) {
+                            pchk = (pchk * 1315423911L) ^ patImg.getRGB(x, y);
+                        }
+                    }
+                    LOG.debug("saved pattern to " + patFile.getAbsolutePath() + " firstPixelRGBA=0x" + Integer.toHexString(p0) + " checksum=" + Long.toUnsignedString(pchk));
+                } catch (Throwable ignore2) {}
             }
         } catch (Throwable ignore) {}
+        // log region/screen diagnostics and capture the live search area prior to matching
         try {
-            // honor configured wait time (ms -> seconds)
-            double timeout = Math.max(0, context.getWaitTime() / 1000.0);
-            targetMatch = screenRegion.wait(searchPattern, timeout);
+            int rx = screenRegion.getX();
+            int ry = screenRegion.getY();
+            int rw = screenRegion.getW();
+            int rh = screenRegion.getH();
+            Object scrObj = screenRegion.getScreen();
+            String sdesc = (scrObj != null ? scrObj.toString() : "null");
+            LOG.debug("region origin=(" + rx + "," + ry + ") size=" + rw + "x" + rh + " screen=" + sdesc);
+            // capture and save a pre-search snapshot for comparison with AutomationExecutor's failed-search image
+            try {
+                if (screenRegion.getScreen() != null) {
+                    BufferedImage snap = screenRegion.getScreen().capture(screenRegion).getImage();
+                    File outDir = new File("target/debug/presearch");
+                    if (!outDir.exists()) {
+                        outDir.mkdirs();
+                    }
+                    File outFile = new File(outDir, String.format("region_%d_%d_%dx%d.png", rx, ry, rw, rh));
+                    ImageIO.write(snap, "png", outFile);
+                    int r0 = snap.getRGB(Math.min(0, rw-1), Math.min(0, rh-1));
+                    long rchk = 0;
+                    for (int y = 0; y < rh; y+=Math.max(1, rh/10)) {
+                        for (int x = 0; x < rw; x+=Math.max(1, rw/10)) {
+                            rchk = (rchk * 1315423911L) ^ snap.getRGB(x, y);
+                        }
+                    }
+                    LOG.debug("saved pre-search region snapshot to " + outFile.getAbsolutePath() + " firstPixelRGBA=0x" + Integer.toHexString(r0) + " checksum=" + Long.toUnsignedString(rchk));
+                }
+            } catch (Throwable snapEx) {
+                LOG.debug("failed to save pre-search snapshot: " + snapEx.getMessage());
+            }
+        } catch (Throwable ignore) {}
+        long t0 = System.nanoTime();
+        try {
+            if (exhaustive) {
+                // Single exhaustive scan without waiting/retries
+                targetMatch = screenRegion.find(searchPattern);
+            } else {
+                // honor configured wait time (ms -> seconds)
+                double timeout = Math.max(0, context.getWaitTime() / 1000.0);
+                targetMatch = screenRegion.wait(searchPattern, timeout);
+            }
         } catch (org.sikuli.script.FindFailed e) {
             // target not found
+            LOG.debug("SikuliX FindFailed: " + e.getMessage());
         }
         // if not found and it's the first executed slide, try multi-scale fallbacks
-        if (targetMatch == null && Boolean.TRUE.equals(context.getParameters().get("firstExecutedSlide"))) {
+        if (!exhaustive && targetMatch == null && Boolean.TRUE.equals(context.getParameters().get("firstExecutedSlide"))) {
             LOG.info("first slide fallback: starting multi-scale matching");
             // Cover common Retina/simulator factors: 2x, 3x and corresponding downsizes
             float[] scales = new float[] {2.0f, 3.0f, 1.5f, 0.75f, 0.5f, 0.33f, 1.25f, 0.8f};
@@ -81,16 +148,17 @@ public class TargetAction extends ChainedAction {
                 }
             }
         }
+        long t1 = System.nanoTime();
         if (targetMatch != null){
             Location c = targetMatch.getTarget();
-            LOG.info("match found at (" + c.getX() + ", " + c.getY() + ") size " + targetMatch.getW() + "x" + targetMatch.getH() + " score=" + targetMatch.getScore());
+            LOG.info("match found at (" + c.getX() + ", " + c.getY() + ") size " + targetMatch.getW() + "x" + targetMatch.getH() + " score=" + targetMatch.getScore() + String.format(" elapsed=%.3fs", (t1 - t0)/1e9));
             Context childConext = new Context(context, targetMatch);
             Action child = getChild();
             if (child != null){
                 child.execute(childConext);            
             }
         }else{
-            LOG.info("no match in region " + screenRegion + " with min_score=" + context.getMinScore());
+            LOG.info("no match in region " + screenRegion + " with min_score=" + context.getMinScore() + String.format(" elapsed=%.3fs", (t1 - t0)/1e9));
             throw new ActionExecutionException("Unable to locate the target on the screen", this);
         }
     }

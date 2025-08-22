@@ -3,6 +3,7 @@ package org.sikuli.recorder;
 import java.io.File;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.awt.Toolkit;
 
 import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;
@@ -25,6 +26,8 @@ public class Recorder {
 
 	// Region of interest; visualization removed during migration
 	private Region regionOfInterest;
+	private boolean guidedMode = false;
+	private ScreenshotEventDetector screenshotDetectorRef = null;
 
 	public Recorder(){
 		EventDetector d1 = new MouseEventDetector();
@@ -39,6 +42,27 @@ public class Recorder {
 		return writer.getEventDir();
 	}
 
+	class GuidedKeyListener implements NativeKeyListener {
+		private Logger logger = LoggerFactory.getLogger(GuidedKeyListener.class);
+		public void nativeKeyPressed(NativeKeyEvent e) {
+			int code = e.getKeyCode();
+			if (code == NativeKeyEvent.VC_ENTER) {
+				// Beep and capture once without moving the mouse
+				try { Toolkit.getDefaultToolkit().beep(); } catch (Throwable ignored) {}
+				if (screenshotDetectorRef != null) {
+					try { screenshotDetectorRef.captureOnce(); } catch (Throwable t) { logger.warn("captureOnce failed", t); }
+				}
+			}
+			if (code == NativeKeyEvent.VC_ESCAPE) {
+				logger.info("ESC pressed - finishing guided recording");
+				try { GlobalScreen.unregisterNativeHook(); } catch (Throwable ignored) {}
+				escapeSignal.countDown();
+			}
+		}
+		public void nativeKeyReleased(NativeKeyEvent e) {}
+		public void nativeKeyTyped(NativeKeyEvent e) {}
+	}
+
 	public void setEventDir(File dir) {
 		writer.setEventDir(dir);
 
@@ -51,6 +75,9 @@ public class Recorder {
 	public void addEventDetector(EventDetector d) {
 		d.setWriter(writer);
 		detectors.add(d);
+		if (d instanceof ScreenshotEventDetector) {
+			this.screenshotDetectorRef = (ScreenshotEventDetector) d;
+		}
 	}
 
 	public void startRecording(){
@@ -101,6 +128,31 @@ public class Recorder {
 		stopRecording();
 		System.out.println("Recording is stopped.");
 
+	}
+
+	public void startGuided() {
+		this.guidedMode = true;
+		logger.info("Start Recording (guided mode): Enter=capture, Esc=finish");
+		// Start only mouse detector (to record clicks). Do not start screenshot loop.
+		for (EventDetector d : detectors){
+			if (d instanceof MouseEventDetector) {
+				d.start();
+			}
+		}
+		try {
+			GlobalScreen.registerNativeHook();
+		} catch (NativeHookException ex) {
+			System.err.println("There was a problem registering the native hook.");
+			System.err.println(ex.getMessage());
+			return;
+		}
+		GlobalScreen.addNativeKeyListener(new GuidedKeyListener());
+		try {
+			escapeSignal.await();
+		} catch (InterruptedException e) {
+		}
+		stopRecording();
+		System.out.println("Guided recording is stopped.");
 	}
 	
 	boolean isWindows(){

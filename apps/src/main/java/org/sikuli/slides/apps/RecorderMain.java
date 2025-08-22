@@ -54,11 +54,10 @@ public class RecorderMain {
         }
         final java.util.concurrent.atomic.AtomicBoolean finalized = new java.util.concurrent.atomic.AtomicBoolean(false);
 
-        // Shutdown hook to finalize PPTX on SIGINT (Ctrl-C)
+        // Shutdown hook to finalize PPTX on SIGINT (Ctrl-C) or abnormal termination
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
-                if (finalized.get()) return;
-                finalized.set(true);
+                if (finalized.get()) return; // already finalized in main path
                 System.out.println("Shutdown detected (SIGINT/SIGTERM). Finalizing slides...");
                 try { com.github.kwhat.jnativehook.GlobalScreen.unregisterNativeHook(); } catch (Throwable ignored) {}
                 try { rec.stopRecording(); } catch (Throwable ignored) {}
@@ -68,11 +67,10 @@ public class RecorderMain {
                     output = new java.io.File(eventDir.getName() + ".pptx");
                 else
                     output = new java.io.File(Command.output);
-                if (!finalized.get()) {
-                    PPTXGenerator.generate(eventDir, output);
-                    System.out.println("Slides are saved as " + output);
-                    finalized.set(true);
-                }
+                // Attempt generation now
+                PPTXGenerator.generate(eventDir, output);
+                System.out.println("Slides are saved as " + output);
+                finalized.set(true);
             } catch (Throwable t) {
                 // best effort
             }
@@ -87,7 +85,11 @@ public class RecorderMain {
 			rec.setRegionOfInterest(new Region(x,y,w,h));
 		}
 		
-		rec.start();
+		if (Boolean.TRUE.equals(Command.guided)) {
+            rec.startGuided();
+        } else {
+            rec.start();
+        }
 		
 		File eventDir = rec.getEventDir();		
 		
@@ -114,10 +116,13 @@ public class RecorderMain {
 		 
 		
 		 @Argument(value = "region", description = "Screen region (x, y, width, height) to record (e.g., 100,100,400,400)", required = false, delimiter = ",")
-		 static private Integer[] bounds = null;		 
+		 static private Integer[] bounds = null;         
 		 
 		 @Argument(value = "recorder_capture", description = "Capture backend: sikuli | awt_raw | both", required = false)
          static private String captureBackend = null;
+
+         @Argument(value = "guided", description = "Enable guided recording mode: Enter=capture, Esc=finish", required = false)
+         static private Boolean guided = false;
     }
 
        
