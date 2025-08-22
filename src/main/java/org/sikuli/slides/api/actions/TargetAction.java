@@ -113,6 +113,14 @@ public class TargetAction extends ChainedAction {
     
     @Override
     public void execute(Context context) throws ActionExecutionException {
+        // Prominent notice to avoid user interaction during automated run
+        try {
+            System.out.println();
+            System.out.println("DO NOT USE KEYBOARD AND MOUSE UNTIL TEST EXECUTION END!");
+            System.out.println();
+        } catch (Throwable t) {
+            // ignore console issues
+        }
         LOG.info("DEBUG: TargetAction.execute() called - checking for NCC fallback integration");
         LOG.info("DEBUG: Context.getMinScore() = " + context.getMinScore());
         Pattern searchPattern = getPattern().similar(context.getMinScore());
