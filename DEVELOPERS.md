@@ -41,6 +41,13 @@ Notes:
 - Prefer `-Dmaven.test.skip=true` when building locally to avoid compiling or running tests (some legacy tests reference removed classes). `-DskipTests=true` only skips execution but still compiles tests, which can fail.
 - You may see a warning about `install4j` `systemPath` in `apps/pom.xml` — OK for now; we will clean this later.
 
+3) One-shot build (API + apps):
+```bash
+# from repository root
+./build-all.sh
+```
+Produces both the API JAR (installed to your local Maven repository — default `~/.m2/repository` unless overridden) and the shaded apps JAR.
+
 ## Run
 - **Recorder** (new option: selectable capture backend):
   - `--recorder_capture`: `sikuli | awt_raw | both`
