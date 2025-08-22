@@ -202,26 +202,10 @@ public class TargetAction extends ChainedAction {
             }
         } catch (Throwable ignore) {}
         long t0 = System.nanoTime();
-        try {
-            if (exhaustive) {
-                // Single exhaustive scan without waiting/retries
-                targetMatch = screenRegion.find(searchPattern);
-            } else {
-                // honor configured wait time (ms -> seconds)
-                double timeout = Math.max(0, context.getWaitTime() / 1000.0);
-                targetMatch = screenRegion.wait(searchPattern, timeout);
-            }
-        } catch (org.sikuli.script.FindFailed e) {
-            // target not found - try NCC fallback
-            LOG.debug("SikuliX FindFailed: " + e.getMessage() + " - trying NCC fallback");
-            targetMatch = tryNCCFallback(screenRegion, context.getMinScore());
-        }
-        
-        // If still no match found (either from exception or timeout), try NCC fallback
-        if (targetMatch == null) {
-            LOG.info("SikuliX pattern matching failed - trying NCC fallback");
-            targetMatch = tryNCCFallback(screenRegion, context.getMinScore());
-        }
+        // Enforce strict 1:1 single-scale matching only (no SikuliX internal multi-scale)
+        // Always use our NCC implementation to avoid any implicit scaling.
+        LOG.info("single-scale mode: using NCC-only search (no SikuliX find/wait)");
+        targetMatch = tryNCCFallback(screenRegion, context.getMinScore());
         long t1 = System.nanoTime();
         if (targetMatch != null){
             Location c = targetMatch.getTarget();

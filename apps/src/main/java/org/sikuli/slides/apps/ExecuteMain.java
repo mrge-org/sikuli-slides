@@ -37,7 +37,7 @@ public class ExecuteMain {
     private Integer screenId = 0;
 
 	@Argument(value = "min_score", description = "The minimum similarity score for a target to be considered as a match. It's on a 0 to 1 scale where 0 is the least precise search and 1.0 is the most precise search (default is 0.95).", required = false)
-	private float minScore = 0.95f;
+	private Float minScore = 0.9f;
 
 	@Argument(value = "wait", description = "The maximum time to wait (ms) for a target to appear on the screen to perform an action on it (default is 5000).", required = false)
 	private Long wait = 5000L;
