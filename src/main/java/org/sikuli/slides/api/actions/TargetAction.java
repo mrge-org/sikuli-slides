@@ -9,6 +9,7 @@ import org.sikuli.script.Location;
 import org.sikuli.script.Pattern;
 import org.sikuli.script.Region;
 import org.sikuli.script.Match;
+import org.sikuli.script.Finder;
 import org.sikuli.slides.api.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,21 +18,105 @@ import com.google.common.base.Objects;
 
 public class TargetAction extends ChainedAction {
     private static final Logger LOG = LoggerFactory.getLogger(TargetAction.class);
-	
-	private Pattern pattern;
-	
-	public TargetAction(Pattern pattern){
-		this.setPattern(pattern);
-	}
-	
-	public TargetAction(Pattern pattern, Action targetAction){
-		this.setPattern(pattern);
-		setChild(targetAction);
-	}
-	
-	@Override
-	public void execute(Context context) throws ActionExecutionException {
+    
+    private static class Result { int x, y; double ssd, ncc; }
+    
+    private static class NCCResult { int x, y; double ncc; }
+    
+    // NCC-based pattern matching using the same algorithm as VerifyPatternInRegion
+    private NCCResult findWithNCC(BufferedImage region, BufferedImage pattern, double minScore) {
+        if (pattern.getWidth() > region.getWidth() || pattern.getHeight() > region.getHeight()) {
+            return null;
+        }
+        
+        // Convert to grayscale double arrays for deterministic math
+        double[][] R = toGrayscale(region);
+        double[][] P = toGrayscale(pattern);
+        
+        int RH = R.length, RW = R[0].length;
+        int PH = P.length, PW = P[0].length;
+        
+        // Precompute pattern statistics
+        double pSum = 0, pSumSq = 0;
+        for (int y = 0; y < PH; y++) {
+            for (int x = 0; x < PW; x++) {
+                double v = P[y][x];
+                pSum += v;
+                pSumSq += v * v;
+            }
+        }
+        double pN = PW * PH;
+        double pMean = pSum / pN;
+        double pVar = Math.max(1e-12, (pSumSq / pN) - pMean * pMean);
+        double pStd = Math.sqrt(pVar);
+        
+        double bestNCC = -1.0;
+        int bestX = 0, bestY = 0;
+        
+        // Sliding window search
+        for (int y = 0; y <= RH - PH; y++) {
+            for (int x = 0; x <= RW - PW; x++) {
+                double rSum = 0, rSumSq = 0;
+                for (int j = 0; j < PH; j++) {
+                    for (int i = 0; i < PW; i++) {
+                        double rv = R[y + j][x + i];
+                        rSum += rv;
+                        rSumSq += rv * rv;
+                    }
+                }
+                
+                // NCC with mean/std normalization
+                double rMean = rSum / pN;
+                double rVar = Math.max(1e-12, (rSumSq / pN) - rMean * rMean);
+                double rStd = Math.sqrt(rVar);
+                
+                double centeredCross = 0;
+                for (int j = 0; j < PH; j++) {
+                    for (int i = 0; i < PW; i++) {
+                        double rv = R[y + j][x + i] - rMean;
+                        double pv = P[j][i] - pMean;
+                        centeredCross += rv * pv;
+                    }
+                }
+                double denom = (pStd * rStd) * pN;
+                double ncc = (denom > 0) ? (centeredCross / denom) : -1.0;
+                
+                if (ncc > bestNCC) {
+                    bestNCC = ncc;
+                    bestX = x; 
+                    bestY = y;
+                }
+            }
+        }
+        
+        if (bestNCC >= minScore) {
+            NCCResult result = new NCCResult();
+            result.x = bestX;
+            result.y = bestY;
+            result.ncc = bestNCC;
+            return result;
+        }
+        
+        return null;
+    }
+    
+    private Pattern pattern;
+    
+    public TargetAction(Pattern pattern){
+        this.setPattern(pattern);
+    }
+    
+    public TargetAction(Pattern pattern, Action targetAction){
+        this.setPattern(pattern);
+        setChild(targetAction);
+    }
+    
+    @Override
+    public void execute(Context context) throws ActionExecutionException {
+        LOG.info("DEBUG: TargetAction.execute() called - checking for NCC fallback integration");
+        LOG.info("DEBUG: Context.getMinScore() = " + context.getMinScore());
         Pattern searchPattern = getPattern().similar(context.getMinScore());
+        LOG.debug("searchPattern=" + String.valueOf(searchPattern));
         Region screenRegion = context.getScreenRegion();
         boolean exhaustive = Boolean.TRUE.equals(context.getParameters().get("exhaustive"));
         // park mouse away from region to avoid cursor affecting match
@@ -54,6 +139,11 @@ public class TargetAction extends ChainedAction {
                     LOG.debug("pattern hasAlpha=" + hasAlpha);
                     // Save the exact pattern used for matching
                     BufferedImage patImg = getPattern().getImage().get();
+                    // quick grayscale heuristic on the pattern
+                    try {
+                        boolean pg = isGrayscaleLike(patImg);
+                        LOG.debug("pattern grayscale_like=" + pg + " awtType=" + patImg.getType());
+                    } catch (Throwable ig) {}
                     File outDir = new File("target/debug/presearch");
                     if (!outDir.exists()) { outDir.mkdirs(); }
                     File patFile = new File(outDir, String.format("pattern_%dx%d.png", pw, ph));
@@ -78,10 +168,20 @@ public class TargetAction extends ChainedAction {
             Object scrObj = screenRegion.getScreen();
             String sdesc = (scrObj != null ? scrObj.toString() : "null");
             LOG.debug("region origin=(" + rx + "," + ry + ") size=" + rw + "x" + rh + " screen=" + sdesc);
+            // dump SikuliX Settings once per invocation for transparency
+            try {
+                dumpSikuliSettings();
+            } catch (Throwable ds) {
+                LOG.debug("failed to dump SikuliX Settings: " + ds.getMessage());
+            }
             // capture and save a pre-search snapshot for comparison with AutomationExecutor's failed-search image
             try {
                 if (screenRegion.getScreen() != null) {
                     BufferedImage snap = screenRegion.getScreen().capture(screenRegion).getImage();
+                    try {
+                        boolean rg = isGrayscaleLike(snap);
+                        LOG.debug("region grayscale_like=" + rg + " awtType=" + snap.getType());
+                    } catch (Throwable ig2) {}
                     File outDir = new File("target/debug/presearch");
                     if (!outDir.exists()) {
                         outDir.mkdirs();
@@ -112,41 +212,15 @@ public class TargetAction extends ChainedAction {
                 targetMatch = screenRegion.wait(searchPattern, timeout);
             }
         } catch (org.sikuli.script.FindFailed e) {
-            // target not found
-            LOG.debug("SikuliX FindFailed: " + e.getMessage());
+            // target not found - try NCC fallback
+            LOG.debug("SikuliX FindFailed: " + e.getMessage() + " - trying NCC fallback");
+            targetMatch = tryNCCFallback(screenRegion, context.getMinScore());
         }
-        // if not found and it's the first executed slide, try multi-scale fallbacks
-        if (!exhaustive && targetMatch == null && Boolean.TRUE.equals(context.getParameters().get("firstExecutedSlide"))) {
-            LOG.info("first slide fallback: starting multi-scale matching");
-            // Cover common Retina/simulator factors: 2x, 3x and corresponding downsizes
-            float[] scales = new float[] {2.0f, 3.0f, 1.5f, 0.75f, 0.5f, 0.33f, 1.25f, 0.8f};
-            boolean scaledTried = false;
-            for (float s : scales) {
-                try {
-                    Pattern scaled = new Pattern(getPattern().getImage()).resize(s).similar(context.getMinScore());
-                    scaledTried = true;
-                    LOG.info("retry match with scaled pattern factor=" + s);
-                    try {
-                        double timeout = Math.max(0, context.getWaitTime() / 1000.0);
-                        targetMatch = screenRegion.wait(scaled, timeout);
-                    } catch (org.sikuli.script.FindFailed e) {
-                        // continue
-                    }
-                    if (targetMatch != null) {
-                        LOG.info("scaled match succeeded with factor=" + s + " score=" + targetMatch.getScore());
-                        break;
-                    }
-                } catch (Throwable t) {
-                    LOG.warn("scaled pattern build failed for factor=" + s + ": " + t.getMessage());
-                }
-            }
-            if (targetMatch == null) {
-                if (scaledTried) {
-                    LOG.info("multi-scale fallback did not find a match");
-                } else {
-                    LOG.warn("multi-scale fallback could not be attempted (no scaling support)");
-                }
-            }
+        
+        // If still no match found (either from exception or timeout), try NCC fallback
+        if (targetMatch == null) {
+            LOG.info("SikuliX pattern matching failed - trying NCC fallback");
+            targetMatch = tryNCCFallback(screenRegion, context.getMinScore());
         }
         long t1 = System.nanoTime();
         if (targetMatch != null){
@@ -163,6 +237,96 @@ public class TargetAction extends ChainedAction {
         }
     }
 
+    // Heuristic: sample pixels to decide if image is nearly grayscale (R≈G≈B)
+    private boolean isGrayscaleLike(BufferedImage img) {
+        int w = img.getWidth();
+        int h = img.getHeight();
+        int stepY = Math.max(1, h / 20);
+        int stepX = Math.max(1, w / 20);
+        int tol = 2; // small tolerance for compression/rounding
+        int colored = 0;
+        int total = 0;
+        for (int y = 0; y < h; y += stepY) {
+            for (int x = 0; x < w; x += stepX) {
+                int argb = img.getRGB(x, y);
+                int r = (argb >> 16) & 0xFF;
+                int g = (argb >> 8) & 0xFF;
+                int b = argb & 0xFF;
+                if (!(Math.abs(r - g) <= tol && Math.abs(r - b) <= tol && Math.abs(g - b) <= tol)) {
+                    colored++;
+                }
+                total++;
+            }
+        }
+        // consider grayscale-like if fewer than 5% of sampled pixels are colored
+        return colored * 20 <= total;
+    }
+
+    // Reflectively dump SikuliX Settings public static fields without binding to version-specific names
+    private void dumpSikuliSettings() {
+        try {
+            // SikuliX 2.x: org.sikuli.basics.Settings; older builds: org.sikuli.script.Settings
+            Class<?> cls = null;
+            try {
+                cls = Class.forName("org.sikuli.basics.Settings");
+            } catch (ClassNotFoundException e1) {
+                try {
+                    cls = Class.forName("org.sikuli.script.Settings");
+                } catch (ClassNotFoundException e2) {
+                    LOG.debug("SikuliX Settings class not found");
+                    return;
+                }
+            }
+
+            java.lang.reflect.Field[] fields = cls.getFields();
+            StringBuilder sb = new StringBuilder();
+            sb.append("SikuliX Settings: ");
+            int count = 0;
+            for (java.lang.reflect.Field f : fields) {
+                int mod = f.getModifiers();
+                if (java.lang.reflect.Modifier.isStatic(mod) && java.lang.reflect.Modifier.isPublic(mod)) {
+                    try {
+                        Object val = f.get(null);
+                        // limit overly long values
+                        String vs = String.valueOf(val);
+                        if (vs.length() > 120) {
+                            vs = vs.substring(0, 117) + "...";
+                        }
+                        if (count > 0) sb.append("; ");
+                        sb.append(f.getName()).append("=").append(vs);
+                        count++;
+                    } catch (Throwable ig) {
+                        // skip if not accessible
+                    }
+                }
+            }
+            if (count > 0) {
+                LOG.info(sb.toString());
+            } else {
+                LOG.info("SikuliX Settings: <none>");
+            }
+        } catch (Throwable t) {
+            LOG.debug("failed to dump SikuliX Settings: " + t.getMessage());
+        }
+    }
+
+    private static double[][] toGrayscale(BufferedImage img) {
+        int w = img.getWidth();
+        int h = img.getHeight();
+        double[][] g = new double[h][w];
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int argb = img.getRGB(x, y);
+                int r = (argb >> 16) & 0xFF;
+                int gg = (argb >> 8) & 0xFF;
+                int b = (argb) & 0xFF;
+                // standard luminance
+                g[y][x] = 0.299 * r + 0.587 * gg + 0.114 * b;
+            }
+        }
+        return g;
+    }
+
     private void parkMouse(Region r){
         try {
             int parkX = Math.max(0, r.getX() - 30);
@@ -171,6 +335,33 @@ public class TargetAction extends ChainedAction {
             robot.mouseMove(parkX, parkY);
         } catch (Throwable t) {
             // ignore
+        }
+    }
+
+    private Match tryNCCFallback(Region screenRegion, double minScore) {
+        try {
+            LOG.info("NCC fallback: starting custom pattern matching");
+            BufferedImage regionImage = screenRegion.getScreen().capture(screenRegion).getImage();
+            BufferedImage patternImage = getPattern().getImage().get();
+            
+            NCCResult nccResult = findWithNCC(regionImage, patternImage, minScore);
+            if (nccResult != null) {
+                LOG.info("NCC fallback: found match with score=" + nccResult.ncc + " at (" + nccResult.x + "," + nccResult.y + ")");
+                // Create a Match object from NCC result
+                int centerX = screenRegion.getX() + nccResult.x + patternImage.getWidth() / 2;
+                int centerY = screenRegion.getY() + nccResult.y + patternImage.getHeight() / 2;
+                Match match = new Match(new Region(centerX - patternImage.getWidth()/2, centerY - patternImage.getHeight()/2, 
+                                                  patternImage.getWidth(), patternImage.getHeight()), nccResult.ncc);
+                match.setTarget(centerX, centerY);
+                LOG.info("NCC fallback: created match at " + match.getTarget() + " score=" + match.getScore());
+                return match;
+            } else {
+                LOG.info("NCC fallback: no match found above threshold " + minScore);
+                return null;
+            }
+        } catch (Throwable ex) {
+            LOG.warn("NCC fallback failed: " + ex.getMessage());
+            return null;
         }
     }
 

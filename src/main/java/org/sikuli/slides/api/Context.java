@@ -29,7 +29,7 @@ import com.google.common.collect.Maps;
  */
 public class Context {
 	private static final long DEFAULT_WAIT_TIME = 5000;
-	private static final float DEFAULT_MIN_SCORE = 0.7f;
+	public static final float DEFAULT_MIN_SCORE = 0.95f;
 
 	private Region screenRegion;
 	private Slide slide;	
