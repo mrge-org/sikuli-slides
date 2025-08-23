@@ -91,6 +91,9 @@ public class ImageRegionMatcher {
             );
             long elapsedEnhMs = (System.nanoTime() - startEnhNs) / 1_000_000L;
             LOG.info(String.format("Enhanced method result: %d,%d (%d ms)", center2.getX(), center2.getY(), elapsedEnhMs));
+
+            LOG.info("Executing click at enhanced result location...");
+            executeClickAt(center2);
         } catch (FindFailed ff) {
             LOG.error("Match not found: {}", ff.getMessage());
             System.exit(1);
@@ -187,5 +190,17 @@ public class ImageRegionMatcher {
                     region.getX(), region.getY(), region.getW(), region.getH(), e.toString()));
         }
         return null;
+    }
+
+    /**
+     * Execute a mouse click at the given absolute screen location.
+     */
+    public static void executeClickAt(Location location) throws Exception {
+        if (location == null) {
+            throw new IllegalArgumentException("location is null");
+        }
+        Screen screen = new Screen();
+        screen.click(location);
+        LOG.info("Click executed at: {},{}", location.getX(), location.getY());
     }
 }
