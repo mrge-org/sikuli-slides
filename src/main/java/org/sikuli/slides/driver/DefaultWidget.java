@@ -3,10 +3,14 @@ package org.sikuli.slides.driver;
 import org.sikuli.script.Region;
 import org.sikuli.script.Pattern;
 import org.sikuli.script.Screen;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
 
 class DefaultWidget implements Widget {
+
+    private static final Logger logger = LoggerFactory.getLogger(DefaultWidget.class);
 
 	private Pattern pattern;
 	private String label;
@@ -118,8 +122,8 @@ class DefaultWidget implements Widget {
 		Region r = getScreenRegion();
 		if (r != null){
 			// Drop functionality is part of dragDrop in SikuliX 2.x
-			System.out.println("Drop operation - use dragDrop instead");
-		}			
-	}	
-	
+			logger.info("Drop operation - use dragDrop instead");
+		}            
+	} 
+    
 }

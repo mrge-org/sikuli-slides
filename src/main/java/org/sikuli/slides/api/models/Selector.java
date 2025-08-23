@@ -166,7 +166,7 @@ public class Selector {
 	
 	public Selector print(){
 		for (SlideElement element : elements){
-			System.out.println(element);
+			logger.info(String.valueOf(element));
 		}
 		return this;
 	}

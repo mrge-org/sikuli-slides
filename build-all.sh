@@ -10,6 +10,23 @@ if [ -z "$LOCAL_REPO" ]; then
   LOCAL_REPO="(local Maven repository)"
 fi
 
+## Guard: disallow raw System.out/err usage in main Java sources (use Log4j instead)
+# - Scan only main sources (exclude tests)
+# - Ignore occurrences on commented lines (//, /*, *)
+VIOLATIONS=$(grep -R -nE 'System\.(out|err)\.print' \
+  "$ROOT_DIR/src/main/java" "$ROOT_DIR/apps/src/main/java" \
+  --include='*.java' 2>/dev/null \
+  | grep -v 'TeeOutputStream' \
+  | grep -v 'apps/src/main/java/com/sampullara/cli/' \
+  | grep -v -E '^[[:space:]]*//' \
+  | grep -v -E '^[[:space:]]*/\*' \
+  | grep -v -E '^[[:space:]]*\*' || true)
+if [ -n "$VIOLATIONS" ]; then
+  echo "Build guard failed: Found System.out/err usage in Java sources (use Log4j)."
+  echo "$VIOLATIONS"
+  exit 3
+fi
+
 echo "[1/2] Building API at $ROOT_DIR (skip tests compile+run)"
 (mkdir -p "$ROOT_DIR/target" >/dev/null 2>&1 || true)
 (cd "$ROOT_DIR" && mvn -Dmaven.test.skip=true clean package install)

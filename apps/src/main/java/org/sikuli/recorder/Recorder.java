@@ -75,31 +75,31 @@ public class Recorder {
             return;
         }
         logger.info("Start Recording");
-        System.out.println("Recording started.");
-        System.out.println(" Temp dir: " + System.getProperty("java.io.tmpdir"));
-        System.out.println(" Event folder: " + getEventDir().getAbsolutePath());
-        System.out.println(" Capture backend: " + captureContext.getBackend());
+        logger.info("Recording started.");
+        logger.info(" Temp dir: {}", System.getProperty("java.io.tmpdir"));
+        logger.info(" Event folder: {}", getEventDir().getAbsolutePath());
+        logger.info(" Capture backend: {}", captureContext.getBackend());
         if (regionOfInterest != null) {
-            System.out.println(String.format(" ROI: x=%d y=%d w=%d h=%d",
-                    regionOfInterest.getX(), regionOfInterest.getY(), regionOfInterest.getW(), regionOfInterest.getH()));
+            logger.info(" ROI: x={} y={} w={} h={}",
+                    regionOfInterest.getX(), regionOfInterest.getY(), regionOfInterest.getW(), regionOfInterest.getH());
         }
 
         // Probe a single screen capture to surface Screen Recording issues on macOS.
         try {
             ScreenImage probe = regionOfInterest.getScreen().capture(regionOfInterest);
             if (probe == null || probe.getImage() == null) {
-                System.out.println(" Probe capture returned no image. On macOS, grant Screen Recording to your Terminal/IDE.");
+                logger.warn(" Probe capture returned no image. On macOS, grant Screen Recording to your Terminal/IDE.");
             } else {
                 try {
                     File f = new File(getEventDir(), "probe.screenshot.png");
                     ImageIO.write(probe.getImage(), "png", f);
                 } catch (IOException io) {
-                    System.out.println(" Probe capture could not be saved: " + io.getMessage());
+                    logger.warn(" Probe capture could not be saved: {}", io.getMessage());
                 }
             }
         } catch (Throwable t) {
-            System.out.println(" Probe capture failed: " + t.getMessage());
-            System.out.println(" On macOS, enable: Privacy & Security → Screen Recording for your Terminal/IDE, then retry.");
+            logger.warn(" Probe capture failed: {}", t.getMessage());
+            logger.warn(" On macOS, enable: Privacy & Security → Screen Recording for your Terminal/IDE, then retry.");
         }
 
         for (EventDetector d : detectors){
@@ -107,18 +107,18 @@ public class Recorder {
         }
         startConsoleStopper();
         startFileStopper();
-        System.out.println(" Tip: Press Enter in this console to stop (fallback), or use the hotkey.");
-        System.out.println(" Tip: Create a file named 'STOP' in current directory or event folder to stop.");
+        logger.info(" Tip: Press Enter in this console to stop (fallback), or use the hotkey.");
+        logger.info(" Tip: Create a file named 'STOP' in current directory or event folder to stop.");
 
         // After 15s, if no mouse detected, print a hint for macOS permissions and ROI
         new Thread(() -> {
             try { Thread.sleep(15000); } catch (InterruptedException ignored) {}
             try {
                 if (hasStarted.get() && mouseDetector != null && !mouseDetector.hasDetected()) {
-                    System.out.println(" Note: No mouse activity detected in ROI in the first 15s.");
-                    System.out.println("  - Ensure you click inside the specified ROI: "
-                            + String.format("x=%d y=%d w=%d h=%d", regionOfInterest.getX(), regionOfInterest.getY(), regionOfInterest.getW(), regionOfInterest.getH()));
-                    System.out.println("  - On macOS, verify Input Monitoring permission for your Terminal/IDE.");
+                    logger.info(" Note: No mouse activity detected in ROI in the first 15s.");
+                    logger.info("  - Ensure you click inside the specified ROI: x={} y={} w={} h={}",
+                            regionOfInterest.getX(), regionOfInterest.getY(), regionOfInterest.getW(), regionOfInterest.getH());
+                    logger.info("  - On macOS, verify Input Monitoring permission for your Terminal/IDE.");
                 }
             } catch (Throwable ignored) {}
         }, "Recorder-NoMouseActivityWarn").start();
@@ -145,7 +145,7 @@ public class Recorder {
                 while ((line = br.readLine()) != null) {
                     String t = line.trim();
                     if (t.isEmpty() || t.equalsIgnoreCase("stop")) {
-                        System.out.println(" Console stop detected. Stopping recording...");
+                        logger.info(" Console stop detected. Stopping recording...");
                         try { GlobalScreen.unregisterNativeHook(); } catch (NativeHookException ignored) {}
                         escapeSignal.countDown();
                         break;
@@ -166,7 +166,7 @@ public class Recorder {
                 try {
                     File evtStop = new File(getEventDir(), "STOP");
                     if (cwdStop.exists() || evtStop.exists()) {
-                        System.out.println(" File STOP detected. Stopping recording...");
+                        logger.info(" File STOP detected. Stopping recording...");
                         try { GlobalScreen.unregisterNativeHook(); } catch (NativeHookException ignored) {}
                         escapeSignal.countDown();
                         break;
@@ -216,18 +216,18 @@ public class Recorder {
             GlobalScreen.registerNativeHook();
         }
         catch (NativeHookException ex) {
-            System.err.println("There was a problem registering the native hook.");
-            System.err.println(ex.getMessage());
+            logger.error("There was a problem registering the native hook.");
+            logger.error(ex.getMessage());
             return;
         }
 
         GlobalScreen.addNativeKeyListener(new HotKeyListener());
-        System.out.println("Global key listener active. If hotkeys do nothing on macOS:");
-        System.out.println(" - Enable Privacy & Security → Input Monitoring for your Terminal/IDE");
-        System.out.println(" - Enable Privacy & Security → Accessibility for your Terminal/IDE");
-        System.out.println(" - Enable Privacy & Security → Screen Recording for your Terminal/IDE");
-        System.out.println(" - Close any app with Secure Input active (e.g., password prompts)");
-        System.out.println("You can also press Enter here to stop.");
+        logger.info("Global key listener active. If hotkeys do nothing on macOS:");
+        logger.info(" - Enable Privacy & Security → Input Monitoring for your Terminal/IDE");
+        logger.info(" - Enable Privacy & Security → Accessibility for your Terminal/IDE");
+        logger.info(" - Enable Privacy & Security → Screen Recording for your Terminal/IDE");
+        logger.info(" - Close any app with Secure Input active (e.g., password prompts)");
+        logger.info("You can also press Enter here to stop.");
 
         try {
             escapeSignal.await();
@@ -235,11 +235,11 @@ public class Recorder {
         }
 
         stopRecording();
-        System.out.println("Recording is stopped.");
+        logger.info("Recording is stopped.");
     }
 
     public void startGuided() {
-        System.out.println("Start Recording (guided mode): Enter=capture, Esc=finish");
+        logger.info("Start Recording (guided mode): Enter=capture, Esc=finish");
         // Start only MouseEventDetector(s)
         for (EventDetector d : detectors) {
             if (d instanceof MouseEventDetector) {
@@ -249,8 +249,8 @@ public class Recorder {
         try {
             GlobalScreen.registerNativeHook();
         } catch (NativeHookException ex) {
-            System.err.println("There was a problem registering the native hook.");
-            System.err.println(ex.getMessage());
+            logger.error("There was a problem registering the native hook.");
+            logger.error(ex.getMessage());
             return;
         }
         GlobalScreen.addNativeKeyListener(new GuidedKeyListener());
@@ -259,7 +259,7 @@ public class Recorder {
         } catch (InterruptedException e) {
         }
         stopRecording();
-        System.out.println("Guided recording is stopped.");
+        logger.info("Guided recording is stopped.");
     }
 
     boolean isWindows(){
@@ -280,14 +280,14 @@ public class Recorder {
                 // ALT+SHIFT+2
                 if (e.getKeyCode() == NativeKeyEvent.VC_2 && isShiftPressed && isAltPressed){
                     logger.trace("ALT+SHIFT+2 is pressed");
-                    System.out.println("Hotkey detected: ALT+SHIFT+2 (start)");
+                    logger.info("Hotkey detected: ALT+SHIFT+2 (start)");
                     startRecording();
                 }
 
                 // ALT+SHIFT+ESC
                 if (e.getKeyCode() == NativeKeyEvent.VC_ESCAPE && isShiftPressed && isAltPressed){
                     logger.trace("ALT+SHIFT+ESC is pressed");
-                    System.out.println("Hotkey detected: ALT+SHIFT+ESC (stop)");
+                    logger.info("Hotkey detected: ALT+SHIFT+ESC (stop)");
                     try {
                         GlobalScreen.unregisterNativeHook();
                     } catch (NativeHookException ex) {
@@ -302,7 +302,7 @@ public class Recorder {
                 // CMD/CTRL + SHIFT + 2
                 if (e.getKeyCode() == NativeKeyEvent.VC_2 && macLikeModifier){
                     logger.trace("CMD/CTRL+SHIFT+2 is pressed");
-                    System.out.println("Hotkey detected: CMD/CTRL+SHIFT+2 (start)");
+                    logger.info("Hotkey detected: CMD/CTRL+SHIFT+2 (start)");
                     startRecording();
                 }
 
@@ -312,7 +312,7 @@ public class Recorder {
                     boolean plainEsc = !isMetaPressed && !isCtrlPressed && !isAltPressed;
                     if (anyModifierCombo || (plainEsc && hasStarted.get())) {
                         logger.trace("ESC stop detected (mac-permissive)");
-                        System.out.println("Hotkey detected: ESC (stop)");
+                        logger.info("Hotkey detected: ESC (stop)");
                         try {
                             GlobalScreen.unregisterNativeHook();
                         } catch (NativeHookException ex) {
@@ -329,16 +329,16 @@ public class Recorder {
     }
 
     public void printHelp() {
-        System.out.println("Platform: " + System.getProperty("os.name"));
+        logger.info("Platform: {}", System.getProperty("os.name"));
         if (isWindows()){
-            System.out.println("Press [Alt-Shift-2] to start recording");
-            System.out.println("Press [Alt-Shift-ESC] to stop recording");
+            logger.info("Press [Alt-Shift-2] to start recording");
+            logger.info("Press [Alt-Shift-ESC] to stop recording");
         }else{
-            System.out.println("Press [Command-Shift-2] (or [Ctrl-Shift-2]) to start recording");
-            System.out.println("Press [Command-Shift-ESC] (or [Ctrl-Shift-ESC]) to stop recording");
-            System.out.println("Tip: While recording, plain [Esc] will also stop.");
-            System.out.println("If hotkeys do not work, open System Settings → Privacy & Security and grant: Input Monitoring, Accessibility, and Screen Recording to your Terminal/IDE. Then restart it.");
-            System.out.println("Fallbacks: Press Enter here, type 'stop'+Enter, or touch a file named 'STOP' in the current dir or event folder.");
+            logger.info("Press [Command-Shift-2] (or [Ctrl-Shift-2]) to start recording");
+            logger.info("Press [Command-Shift-ESC] (or [Ctrl-Shift-ESC]) to stop recording");
+            logger.info("Tip: While recording, plain [Esc] will also stop.");
+            logger.info("If hotkeys do not work, open System Settings → Privacy & Security and grant: Input Monitoring, Accessibility, and Screen Recording to your Terminal/IDE. Then restart it.");
+            logger.info("Fallbacks: Press Enter here, type 'stop'+Enter, or touch a file named 'STOP' in the current dir or event folder.");
         }
     }
 }

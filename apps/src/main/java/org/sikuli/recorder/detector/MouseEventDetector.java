@@ -5,8 +5,12 @@ import com.github.kwhat.jnativehook.mouse.NativeMouseEvent;
 import com.github.kwhat.jnativehook.mouse.NativeMouseInputListener;
 import org.sikuli.script.Region;
 import org.sikuli.recorder.event.ClickEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MouseEventDetector extends EventDetector implements NativeMouseInputListener {
+
+    private static final Logger logger = LoggerFactory.getLogger(MouseEventDetector.class);
 
     private volatile boolean detected = false;
     private volatile boolean firstLogged = false;
@@ -35,7 +39,7 @@ public class MouseEventDetector extends EventDetector implements NativeMouseInpu
             detected = true;
             if (!firstLogged) {
                 firstLogged = true;
-                System.out.println(" Mouse event detected inside ROI at (" + ex + "," + ey + ")");
+                logger.info(" Mouse event detected inside ROI at ({}, {})", ex, ey);
             }
         }
     }

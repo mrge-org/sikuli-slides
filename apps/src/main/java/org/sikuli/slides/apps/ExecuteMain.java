@@ -1,6 +1,5 @@
 package org.sikuli.slides.apps;
 
-
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -8,6 +7,7 @@ import java.util.List;
 
 import org.sikuli.script.Screen;
 import org.sikuli.script.Region;
+import org.sikuli.script.support.Commons;
 import org.sikuli.slides.api.Context;
 import org.sikuli.slides.api.ExecutionFilter;
 import org.sikuli.slides.api.ExecutionFilter.Factory;
@@ -18,6 +18,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.LogManager;
+import org.apache.log4j.RollingFileAppender;
 
 import com.google.common.base.Objects;
 import com.sampullara.cli.Args;
@@ -189,10 +190,24 @@ public class ExecuteMain {
             Level level = Level.toLevel(logLevelString, Level.INFO);
             Logger root = Logger.getRootLogger();
 
-            // Ensure there is at least a console appender
-            if (!root.getAllAppenders().hasMoreElements()) {
-                PatternLayout layout = new PatternLayout("[%t] %-5p %c %m%n");
-                root.addAppender(new ConsoleAppender(layout));
+            // Always attach our console appender (in addition to any existing ones)
+            PatternLayout consoleLayout = new PatternLayout("%d{HH:mm:ss.SSS} [%t] %-5p %c - %m%n");
+            root.addAppender(new ConsoleAppender(consoleLayout));
+
+            // Attach a rolling file appender if slides.logfile is provided
+            String logPath = System.getProperty("slides.logfile");
+            if (logPath != null && !logPath.isEmpty()) {
+                try {
+                    PatternLayout fileLayout = new PatternLayout("%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5p %c - %m%n");
+                    RollingFileAppender rfa = new RollingFileAppender(fileLayout, logPath, true);
+                    rfa.setMaxBackupIndex(3);
+                    rfa.setMaxFileSize("5MB"); // Log4j 1.x API
+                    rfa.activateOptions();
+                    root.addAppender(rfa);
+                } catch (Throwable t) {
+                    // fall back silently; console will still work
+                    LOG.warn("Failed to attach RollingFileAppender: " + t.getMessage());
+                }
             }
 
             root.setLevel(level);
@@ -201,9 +216,9 @@ public class ExecuteMain {
             Logger.getLogger("org.sikuli.slides").setLevel(level);
             Logger.getLogger("org.sikuli.script").setLevel(level);
 
-            System.out.println("Log4j configured: level=" + level);
+            LOG.info("Log4j configured: level=" + level + (logPath != null ? (" file=" + logPath) : ""));
         } catch (Throwable t) {
-            System.err.println("Failed to configure Log4j: " + t.getMessage());
+            LOG.warn("Failed to configure Log4j: " + t.getMessage());
         }
     }
     void parseArgs(String... args) throws IllegalArgumentException {
@@ -227,7 +242,7 @@ public class ExecuteMain {
         try{
             parseArgs(args);
         }catch(IllegalArgumentException e){
-            System.err.println("Error parsing arguments: " + e.getMessage());
+            LOG.error("Error parsing arguments: " + e.getMessage());
             Args.usage(this, EXE + " " + SYNTAX);
             // ensure clean shutdown on argument errors
             try { LogManager.shutdown(); } catch (Throwable t) {}
@@ -244,25 +259,20 @@ public class ExecuteMain {
         }
         
         // Single run banner and consolidated termination
-        System.out.println();
-        System.out.println("DO NOT USE THE KEYBOARD OR MOUSE UNTIL TEST EXECUTION ENDS!");
-        System.out.println();
+        LOG.info("DO NOT USE THE KEYBOARD OR MOUSE UNTIL TEST EXECUTION ENDS!");
 
         int exitCode = 0;
         try {
             Slides.execute(url, context);
         } catch (SlideExecutionException e) {
             exitCode = 1;
-            System.err.println("Execution failed because " + e.getMessage());            
+            LOG.error("Execution failed because " + e.getMessage());            
             if (e.getSlide() != null){
-                System.err.print("On slide no. " + e.getSlide().getNumber());
-                System.err.println(" Failed to execute " + e.getAction());
+                LOG.error(String.format("On slide no. %d Failed to execute %s", e.getSlide().getNumber(), e.getAction()));
             }
         } finally {
             try {
-                System.out.println();
-                System.out.println("You may now use the keyboard and mouse. Test execution finished.");
-                System.out.println();
+                LOG.info("You may now use the keyboard and mouse. Test execution finished.");
             } catch (Throwable t) {
                 // ignore console issues
             }
@@ -272,84 +282,48 @@ public class ExecuteMain {
     }
 
     public static void main(String... args) {
+        // Create a timestamped log file in the current working directory and tee stdout/stderr to it
+        try {
+            final String ts = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
+            final String fname = "sikuli-slides-run-" + ts + ".log";
+            final java.io.File dir = new java.io.File(System.getProperty("user.dir", "."));
+            final java.io.File logFile = new java.io.File(dir, fname);
+
+            final java.io.PrintStream origOut = System.out;
+            final java.io.PrintStream origErr = System.err;
+            final java.io.FileOutputStream fos = new java.io.FileOutputStream(logFile, true);
+
+            System.setOut(new java.io.PrintStream(new TeeOutputStream(origOut, fos), true));
+            System.setErr(new java.io.PrintStream(new TeeOutputStream(origErr, fos), true));
+            // let Log4j know about the file path; configureLogging() will attach a file appender
+            System.setProperty("slides.logfile", logFile.getAbsolutePath());
+            Logger.getLogger(ExecuteMain.class).info("Console is being logged to: " + logFile.getAbsolutePath());
+        } catch (Throwable t) {
+            // best-effort; do not fail if logging to file cannot be established
+        }
         // Ensure SikuliX native libs are available early (before any org.sikuli.* classes are initialized)
         ensureSikuliXLibs();
         // Ensure background thread failures cause a clean process exit
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
-            System.err.println("Uncaught exception in thread '" + t.getName() + "': " + e);
-            e.printStackTrace(System.err);
+            Logger logger = Logger.getLogger(ExecuteMain.class);
+            logger.error("Uncaught exception in thread '" + t.getName() + "'", e);
             try { LogManager.shutdown(); } catch (Throwable ignored) {}
             System.exit(1);
         });
-        ExecuteMain main = new ExecuteMain();		
+        ExecuteMain main = new ExecuteMain();
         main.execute(args);
     }
 
-    // Try to auto-set the SikuliX native libs folder on Windows when not provided via -Dsikulixlibs
-    private static void ensureSikuliXLibs() {
-        try {
-            String propPath = System.getProperty("sikulixlibs");
-            if (propPath != null) {
-                // User provided path; still try to proactively load OpenCV to fail fast with a clearer message
-                File f = new File(propPath);
-                if (f.isDirectory()) {
-                    File[] dlls = f.listFiles((dir, name) -> name.toLowerCase().startsWith("opencv_java") && name.toLowerCase().endsWith(".dll"));
-                    if (dlls != null && dlls.length > 0) {
-                        try {
-                            File chosen = dlls[0];
-                            System.out.println("Attempting to load OpenCV: " + chosen.getAbsolutePath());
-                            System.load(chosen.getAbsolutePath());
-                            System.out.println("Loaded OpenCV successfully: " + chosen.getName());
-                        } catch (UnsatisfiedLinkError ule) {
-                            System.err.println("Warning: Failed to pre-load OpenCV DLL from -Dsikulixlibs: " + ule.getMessage());
-                        } catch (Throwable t2) {
-                            System.err.println("Warning: Unexpected error while pre-loading OpenCV from -Dsikulixlibs: " + t2.getMessage());
-                        }
-                    } else {
-                        System.err.println("Warning: No opencv_java*.dll found under -Dsikulixlibs=" + f.getAbsolutePath());
-                    }
-                } else {
-                    System.err.println("Warning: -Dsikulixlibs path does not exist: " + f.getAbsolutePath());
-                }
-                return; // user provided
-            }
-            String os = System.getProperty("os.name", "").toLowerCase();
-            if (!os.contains("win")) {
-                return; // only intervene on Windows
-            }
-            File base = getJarDir();
-            String[] candidates = new String[] {
-                "sikulixlibs\\windows\\libs",
-                "sikulixlibs\\win\\libs",
-                "sikulixlibs\\windows\\x86_64",
-                "sikulixlibs\\windows"
-            };
-            for (String rel : candidates) {
-                File f = new File(base, rel);
-                if (f.isDirectory()) {
-                    // Basic sanity: see if there is any opencv dll inside
-                    File[] dlls = f.listFiles((dir, name) -> name.toLowerCase().startsWith("opencv_java") && name.toLowerCase().endsWith(".dll"));
-                    if (dlls != null && dlls.length > 0) {
-                        System.setProperty("sikulixlibs", f.getAbsolutePath());
-                        System.out.println("SikuliX libs path set to: " + f.getAbsolutePath());
-                        // Proactively try to load the first matching OpenCV DLL to avoid classloader resolution issues
-                        try {
-                            File chosen = dlls[0];
-                            System.out.println("Attempting to load OpenCV: " + chosen.getAbsolutePath());
-                            System.load(chosen.getAbsolutePath());
-                            System.out.println("Loaded OpenCV successfully: " + chosen.getName());
-                        } catch (UnsatisfiedLinkError ule) {
-                            System.err.println("Warning: Failed to pre-load OpenCV DLL: " + ule.getMessage());
-                        } catch (Throwable t2) {
-                            System.err.println("Warning: Unexpected error while pre-loading OpenCV: " + t2.getMessage());
-                        }
-                        break;
-                    }
-                }
-            }
-        } catch (Throwable t) {
-            // best effort; do not fail
-        }
+    // Simple tee that writes to two output streams
+    private static final class TeeOutputStream extends java.io.OutputStream {
+        private final java.io.OutputStream a;
+        private final java.io.OutputStream b;
+        TeeOutputStream(java.io.OutputStream a, java.io.OutputStream b) { this.a = a; this.b = b; }
+        @Override public void write(int i) throws java.io.IOException { a.write(i); b.write(i); }
+        @Override public void write(byte[] buf) throws java.io.IOException { a.write(buf); b.write(buf); }
+        @Override public void write(byte[] buf, int off, int len) throws java.io.IOException { a.write(buf, off, len); b.write(buf, off, len); }
+        @Override public void flush() throws java.io.IOException { a.flush(); b.flush(); }
+        @Override public void close() throws java.io.IOException { try { a.close(); } finally { b.close(); } }
     }
 
     private static File getJarDir() {
@@ -377,5 +351,67 @@ public class ExecuteMain {
             throw new IllegalArgumentException("Not a valid input file: " + input);
         }
         return Objects.firstNonNull(webUrl, fileUrl);
+    }
+
+    /**
+     * Best-effort setup to ensure SikuliX native libraries are discoverable.
+     *
+     * Strategy:
+     * - If the user already configured a libs path via env or system properties, keep it.
+     * - Otherwise, probe common repo-local locations (sikulixlibs/mac|macm1/libs) relative to
+     *   the working directory and the jar directory, then set the system properties.
+     * - Finally, trigger SikuliX init to extract/validate libs folder and print its path.
+     */
+    private static void ensureSikuliXLibs() {
+        try {
+            // Respect pre-configured settings first
+            String sysProp = System.getProperty("sikulixlibs");
+            String envVar = System.getenv("SIKULIX_LIBS");
+            if (sysProp != null && !sysProp.isEmpty()) {
+                Logger.getLogger(ExecuteMain.class).info("sikulixlibs system property preset: " + sysProp);
+            }
+            if (envVar != null && !envVar.isEmpty()) {
+                Logger.getLogger(ExecuteMain.class).info("SIKULIX_LIBS env preset: " + envVar);
+            }
+
+            if ((sysProp == null || sysProp.isEmpty()) && (envVar == null || envVar.isEmpty())) {
+                // Determine arch-specific subfolder on macOS
+                String arch = System.getProperty("os.arch", "");
+                boolean isArm = arch.contains("aarch64") || arch.contains("arm64");
+                String[] candidates = new String[] {
+                    // relative to working dir
+                    isArm ? "sikulixlibs/macm1/libs" : "sikulixlibs/mac/libs",
+                    // relative to jar dir
+                    new File(getJarDir(), isArm ? "../sikulixlibs/macm1/libs" : "../sikulixlibs/mac/libs").getPath()
+                };
+                for (String c : candidates) {
+                    File f = new File(c);
+                    try { f = f.getCanonicalFile(); } catch (Exception ignore) {}
+                    if (f.isDirectory()) {
+                        System.setProperty("sikulixlibs", f.getAbsolutePath());
+                        System.setProperty("SIKULIX_LIBS", f.getAbsolutePath());
+                        Logger.getLogger(ExecuteMain.class).info("Configured SikuliX libs: " + f.getAbsolutePath());
+                        break;
+                    }
+                }
+            }
+
+            // Touch SikuliX Commons to force initialization and report the effective folder
+            try {
+                Object libs = Commons.getLibsFolder();
+                if (libs != null) {
+                    if (libs instanceof java.io.File) {
+                        Logger.getLogger(ExecuteMain.class).info("SikuliX libs folder resolved: " + ((java.io.File) libs).getAbsolutePath());
+                    } else {
+                        Logger.getLogger(ExecuteMain.class).info("SikuliX libs folder resolved: " + libs.toString());
+                    }
+                }
+            } catch (Throwable t) {
+                Logger.getLogger(ExecuteMain.class).info("SikuliX Commons init warning: " + t.getMessage());
+            }
+        } catch (Throwable t) {
+            // Do not fail hard; fallback will be SikuliX's own extraction logic
+            Logger.getLogger(ExecuteMain.class).info("ensureSikuliXLibs() non-fatal: " + t.getMessage());
+        }
     }
 }

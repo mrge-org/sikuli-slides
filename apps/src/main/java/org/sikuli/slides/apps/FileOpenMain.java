@@ -8,12 +8,15 @@ import java.util.concurrent.CountDownLatch;
 import org.sikuli.slides.api.Context;
 import org.sikuli.slides.api.SlideExecutionException;
 import org.sikuli.slides.api.Slides;
+import org.apache.log4j.Logger;
 
 import com.install4j.api.launcher.StartupNotification;
 import com.install4j.api.launcher.StartupNotification.Listener;
 
 
 public class FileOpenMain {
+
+    private static final Logger LOG = Logger.getLogger(FileOpenMain.class);
 
     static final CountDownLatch doneSignal = new CountDownLatch(1);
     private static File inputFile;
@@ -41,9 +44,9 @@ public class FileOpenMain {
             Context context = new Context();
             Slides.execute(url, context);
         } catch (MalformedURLException e) {
-            System.err.println("Invalid file: " + file + ": " + e.getMessage());
+            LOG.error("Invalid file: " + file + ": " + e.getMessage());
         } catch (SlideExecutionException e) {
-            System.err.println("Execution failed: " + e.getMessage());
+            LOG.error("Execution failed: " + e.getMessage());
         }
     }
 

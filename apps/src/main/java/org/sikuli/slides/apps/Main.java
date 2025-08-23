@@ -1,8 +1,11 @@
 package org.sikuli.slides.apps;
 
 import java.util.Arrays;
+import org.apache.log4j.Logger;
 
 public class Main {
+
+    private static final Logger LOG = Logger.getLogger(Main.class);
 
     private static void printHelp() {
         String helpMessage =
@@ -11,7 +14,7 @@ public class Main {
                         "  record    Record actions as slides\n"+
                         "  generate  Generate code from slides\n"+
                         "  gui       Launch GUI";
-        System.out.println(helpMessage);
+        LOG.info(helpMessage);
     }
     
     private static void exitWithHelp(int code) {
@@ -49,7 +52,7 @@ public class Main {
             }else if (command.compareToIgnoreCase("generate") == 0){
                 GenerateMain.main(otherArgs);  
             }else{
-                System.err.println("[" + command + "] is not a valid command");
+                LOG.error("[" + command + "] is not a valid command");
                 exitWithHelp(1);
             }     
         }

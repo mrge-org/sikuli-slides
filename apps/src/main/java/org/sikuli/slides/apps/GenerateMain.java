@@ -67,7 +67,7 @@ public class GenerateMain {
         try{
             parseArgs(args);
         }catch(IllegalArgumentException e){
-            System.err.println("Error parsing arguments: " + e.getMessage());
+            logger.error("Error parsing arguments: {}", e.getMessage());
             Args.usage(this, EXE + " " + SYNTAX);
             return;
         }

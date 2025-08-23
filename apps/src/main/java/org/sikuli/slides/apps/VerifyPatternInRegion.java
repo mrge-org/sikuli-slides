@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import org.apache.log4j.Logger;
 
 /**
  * Minimal, dependency-free verifier for checking if a saved pattern exists inside a saved region image.
@@ -23,9 +24,11 @@ import java.io.IOException;
  */
 public class VerifyPatternInRegion {
 
+    private static final Logger LOG = Logger.getLogger(VerifyPatternInRegion.class);
+
     public static void main(String[] args) throws Exception {
         if (args.length < 2 || args.length > 3) {
-            System.out.println("Usage: VerifyPatternInRegion <region.png> <pattern.png> [out-visual.png]");
+            LOG.info("Usage: VerifyPatternInRegion <region.png> <pattern.png> [out-visual.png]");
             System.exit(2);
         }
 
@@ -37,15 +40,14 @@ public class VerifyPatternInRegion {
         BufferedImage pattern = readImage(patternFile);
 
         if (pattern.getWidth() > region.getWidth() || pattern.getHeight() > region.getHeight()) {
-            System.err.println("Pattern larger than region. Aborting.");
+            LOG.error("Pattern larger than region. Aborting.");
             System.exit(1);
         }
 
         // Basic info
-        System.out.printf("Starting strict 1:1 match...\n  region=%s (%dx%d)\n  pattern=%s (%dx%d)\n",
+        LOG.info(String.format("Starting strict 1:1 match...%n  region=%s (%dx%d)%n  pattern=%s (%dx%d)",
                 regionFile.getAbsolutePath(), region.getWidth(), region.getHeight(),
-                patternFile.getAbsolutePath(), pattern.getWidth(), pattern.getHeight());
-        System.out.flush();
+                patternFile.getAbsolutePath(), pattern.getWidth(), pattern.getHeight()));
 
         // Convert to grayscale double arrays for simple, deterministic math
         double[][] R = toGrayscale(region);
@@ -55,13 +57,12 @@ public class VerifyPatternInRegion {
         Result best = search(R, P);
         long t1 = System.nanoTime();
 
-        System.out.printf("Region: %s (%dx%d)\n", regionFile.getAbsolutePath(), region.getWidth(), region.getHeight());
-        System.out.printf("Pattern: %s (%dx%d)\n", patternFile.getAbsolutePath(), pattern.getWidth(), pattern.getHeight());
-        System.out.printf("Best @ (%d,%d)\n", best.x, best.y);
-        System.out.printf("  SSD: %f (lower is better)\n", best.ssd);
-        System.out.printf("  NCC: %f (higher is better, max=1.0)\n", best.ncc);
-        System.out.printf("Elapsed: %.3f s\n", (t1 - t0) / 1e9);
-        System.out.flush();
+        LOG.info(String.format("Region: %s (%dx%d)", regionFile.getAbsolutePath(), region.getWidth(), region.getHeight()));
+        LOG.info(String.format("Pattern: %s (%dx%d)", patternFile.getAbsolutePath(), pattern.getWidth(), pattern.getHeight()));
+        LOG.info(String.format("Best @ (%d,%d)", best.x, best.y));
+        LOG.info(String.format("  SSD: %f (lower is better)", best.ssd));
+        LOG.info(String.format("  NCC: %f (higher is better, max=1.0)", best.ncc));
+        LOG.info(String.format("Elapsed: %.3f s", (t1 - t0) / 1e9));
 
         if (outPath != null) {
             BufferedImage vis = deepCopy(region);
@@ -74,7 +75,7 @@ public class VerifyPatternInRegion {
                 g.dispose();
             }
             ImageIO.write(vis, extFrom(outPath), new File(outPath));
-            System.out.println("Visualization written: " + outPath);
+            LOG.info("Visualization written: " + outPath);
         }
     }
 

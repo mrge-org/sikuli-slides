@@ -157,7 +157,7 @@ public class PPTXWriter {
 		
 		JSONParser parser=new JSONParser();
 
-		  System.out.println("=======decode=======");
+		  logger.info("=======decode=======");
 		                
 		  FileReader s = new FileReader(new File("import.json"));
 		  
@@ -245,7 +245,7 @@ public class PPTXWriter {
 				  tok = tok.replaceAll("&"," and ");
 				  tok = tok.trim();
 				  if (n > 3){
-					  System.out.println(name + "  >" + tok);
+					  logger.info("{}  >{}", name, tok);
 					  items.add(new Item("Publication", tok));
 				  }				  
 			  }

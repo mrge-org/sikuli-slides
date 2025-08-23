@@ -7,11 +7,15 @@ import org.sikuli.script.Region;
 import org.sikuli.recorder.Recorder;
 import org.sikuli.recorder.pptx.PPTXGenerator;
 import org.sikuli.recorder.CaptureContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.sampullara.cli.Args;
 import com.sampullara.cli.Argument;
 
 public class RecorderMain {
+
+    private static final Logger logger = LoggerFactory.getLogger(RecorderMain.class);
 
 	public static void main(String[] args) {	
 		
@@ -47,9 +51,9 @@ public class RecorderMain {
             try {
                 CaptureContext.Backend be = CaptureContext.Backend.valueOf(Command.captureBackend);
                 rec.setCaptureBackend(be);
-                System.out.println("Using capture backend: " + be);
+                logger.info("Using capture backend: {}", be);
             } catch (IllegalArgumentException iae) {
-                System.out.println("Unknown capture backend '" + Command.captureBackend + "'. Valid: sikuli|awt_raw|both. Using default.");
+                logger.warn("Unknown capture backend '{}'. Valid: sikuli|awt_raw|both. Using default.", Command.captureBackend);
             }
         }
         final java.util.concurrent.atomic.AtomicBoolean finalized = new java.util.concurrent.atomic.AtomicBoolean(false);
@@ -58,7 +62,7 @@ public class RecorderMain {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 if (finalized.get()) return; // already finalized in main path
-                System.out.println("Shutdown detected (SIGINT/SIGTERM). Finalizing slides...");
+                logger.info("Shutdown detected (SIGINT/SIGTERM). Finalizing slides...");
                 try { com.github.kwhat.jnativehook.GlobalScreen.unregisterNativeHook(); } catch (Throwable ignored) {}
                 try { rec.stopRecording(); } catch (Throwable ignored) {}
                 java.io.File eventDir = rec.getEventDir();
@@ -69,7 +73,7 @@ public class RecorderMain {
                     output = new java.io.File(Command.output);
                 // Attempt generation now
                 PPTXGenerator.generate(eventDir, output);
-                System.out.println("Slides are saved as " + output);
+                logger.info("Slides are saved as {}", output);
                 finalized.set(true);
             } catch (Throwable t) {
                 // best effort
@@ -101,7 +105,7 @@ public class RecorderMain {
 						
 		if (!finalized.get()) {
             PPTXGenerator.generate(eventDir, output);
-            System.out.println("Slides are saved as " + output);
+            logger.info("Slides are saved as {}", output);
             finalized.set(true);
         }
 	}

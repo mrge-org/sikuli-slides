@@ -6,9 +6,13 @@ import com.github.kwhat.jnativehook.mouse.NativeMouseEvent;
 import com.github.kwhat.jnativehook.mouse.NativeMouseInputListener;
 import org.sikuli.script.Region;
 import org.sikuli.recorder.event.ClickEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MouseEventDetector extends EventDetector 
 implements NativeMouseInputListener {
+
+    private static final Logger logger = LoggerFactory.getLogger(MouseEventDetector.class);
 
     private volatile boolean detected = false;
 
@@ -61,8 +65,7 @@ implements NativeMouseInputListener {
             GlobalScreen.registerNativeHook();
         }
         catch (NativeHookException ex) {
-            System.err.println("There was a problem registering the native hook.");
-            System.err.println(ex.getMessage());
+            logger.error("There was a problem registering the native hook: {}", ex.getMessage());
 
             //            System.exit(1);
         }

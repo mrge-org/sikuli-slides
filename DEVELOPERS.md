@@ -18,35 +18,25 @@
 - Native/libs: `sikulixlibs/`, `apps/lib/`
 
 ## Build
-1) Build and install API to local Maven repo (skip tests entirely):
-```bash
-# from repository root
-mvn -Dmaven.test.skip=true package install
-```
-Expected output includes:
-```
-[INFO] Installing .../target/sikuli-slides-api-1.7.1-SNAPSHOT.jar to <your local Maven repository>/.../sikuli-slides-api-1.7.1-SNAPSHOT.jar
-[INFO] BUILD SUCCESS
-```
 
-2) Build apps (shaded JAR):
-```bash
-# from apps/ directory
-mvn -Dmaven.test.skip=true clean package
-```
-Produces:
-- `apps/target/sikuli-slides-1.7.1-SNAPSHOT.jar` (shaded)
-
-Notes:
-- Prefer `-Dmaven.test.skip=true` when building locally to avoid compiling or running tests (some legacy tests reference removed classes). `-DskipTests=true` only skips execution but still compiles tests, which can fail.
-- You may see a warning about `install4j` `systemPath` in `apps/pom.xml` — OK for now; we will clean this later.
-
-3) One-shot build (API + apps):
+1) Preferred: one-shot build (API + apps)
 ```bash
 # from repository root
 ./build-all.sh
 ```
 Produces both the API JAR (installed to your local Maven repository — default `~/.m2/repository` unless overridden) and the shaded apps JAR.
+
+2) Optional: manual Maven commands (if you are not using the script)
+```bash
+# from repository root (API)
+mvn -Dmaven.test.skip=true clean package install
+
+# from apps/ (shaded JAR)
+(cd apps && mvn -Dmaven.test.skip=true clean package)
+```
+Notes:
+- We avoid `-DskipTests=true` because it still compiles tests and can fail on legacy tests; use `-Dmaven.test.skip=true` or just the script above.
+- You may see a warning about `install4j` `systemPath` in `apps/pom.xml` — OK for now; we will clean this later.
 
 Tip: print your local Maven repository path
 ```bash

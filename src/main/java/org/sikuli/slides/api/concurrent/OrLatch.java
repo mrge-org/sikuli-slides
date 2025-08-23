@@ -5,6 +5,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 
@@ -12,7 +14,8 @@ import com.google.common.collect.Lists;
  * An OrLatch takes multiple latches. It releases awaiting threads 
  * when ONE of the latch releases.
  */
-class OrLatch implements Latch {	
+class OrLatch implements Latch {
+    private static final Logger logger = LoggerFactory.getLogger(OrLatch.class);
 	List<Latch> latches = Lists.newArrayList();
 	
 	private CountDownLatch latchReleaseSignal;	
@@ -39,7 +42,7 @@ class OrLatch implements Latch {
 	@Override
 	public void await() {
 		latchReleaseSignal = new CountDownLatch(1);
-		System.out.println("await" + this.getClass().getCanonicalName());
+		logger.debug("await {}", this.getClass().getCanonicalName());
 		for (Latch latch : latches){
 			LatchThread t = new LatchThread(latch, latchReleaseSignal);
 			t.start();			
@@ -49,7 +52,7 @@ class OrLatch implements Latch {
 		} catch (InterruptedException e) {
 		}
 		for (Latch latch : latches){
-			System.out.println("release" + latch.getClass().getCanonicalName());
+			logger.debug("release {}", latch.getClass().getCanonicalName());
 			latch.release();			
 		}				
 	}	

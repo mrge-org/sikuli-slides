@@ -111,8 +111,7 @@ public class Recorder {
 			GlobalScreen.registerNativeHook();
 		}
 		catch (NativeHookException ex) {
-			System.err.println("There was a problem registering the native hook.");
-			System.err.println(ex.getMessage());
+			logger.error("There was a problem registering the native hook: {}", ex.getMessage());
 			return;
 			//System.exit(1);
 		}
@@ -126,7 +125,7 @@ public class Recorder {
 		}
 
 		stopRecording();
-		System.out.println("Recording is stopped.");
+		logger.info("Recording is stopped.");
 
 	}
 
@@ -142,8 +141,7 @@ public class Recorder {
 		try {
 			GlobalScreen.registerNativeHook();
 		} catch (NativeHookException ex) {
-			System.err.println("There was a problem registering the native hook.");
-			System.err.println(ex.getMessage());
+			logger.error("There was a problem registering the native hook: {}", ex.getMessage());
 			return;
 		}
 		GlobalScreen.addNativeKeyListener(new GuidedKeyListener());
@@ -152,7 +150,7 @@ public class Recorder {
 		} catch (InterruptedException e) {
 		}
 		stopRecording();
-		System.out.println("Guided recording is stopped.");
+		logger.info("Guided recording is stopped.");
 	}
 	
 	boolean isWindows(){
@@ -223,13 +221,13 @@ public class Recorder {
 	}
 
 	public void printHelp() {
-		System.out.println("Platform: " + System.getProperty("os.name"));
+		logger.info("Platform: {}", System.getProperty("os.name"));
 		if (isWindows()){			
-			System.out.println("Press [Alt-Shift-2] to start recording");
-			System.out.println("Press [Alt-Shift-ESC] to stop recording");
+			logger.info("Press [Alt-Shift-2] to start recording");
+			logger.info("Press [Alt-Shift-ESC] to stop recording");
 		}else{
-			System.out.println("Press [Command-Shift-2] (or [Ctrl-Shift-2]) to start recording");
-			System.out.println("Press [Command-Shift-ESC] (or [Ctrl-Shift-ESC]) to stop recording");
+			logger.info("Press [Command-Shift-2] (or [Ctrl-Shift-2]) to start recording");
+			logger.info("Press [Command-Shift-ESC] (or [Ctrl-Shift-ESC]) to stop recording");
 		}	    
 	}
 }

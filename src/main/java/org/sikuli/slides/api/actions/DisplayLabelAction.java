@@ -4,11 +4,15 @@ import java.awt.Color;
 
 import org.sikuli.script.Region;
 import org.sikuli.slides.api.Context;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Objects;
 
 public class DisplayLabelAction implements Action {
 	
+	private static final Logger logger = LoggerFactory.getLogger(DisplayLabelAction.class);
+
 	private String text = "";
 	private int fontSize = 12;
 	private int duration = 3000;
@@ -21,13 +25,13 @@ public class DisplayLabelAction implements Action {
 		
 		// Visual display not supported in SikuliX 2.x
 		// Consider using logger or console output instead
-		System.out.println("Display Label: " + textToDisplay);
+		logger.info("Display Label: {}", textToDisplay);
 	}
 	
 	@Override
 	public void stop(){
 		// Visual canvas not supported in SikuliX 2.x
-		System.out.println("Label display stopped");
+		logger.info("Label display stopped");
 	}
 	
 	public String getText() {
