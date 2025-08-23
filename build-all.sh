@@ -30,12 +30,12 @@ if [ -n "$FILTERED" ]; then
   exit 3
 fi
 
-echo "[1/2] Building API at $ROOT_DIR (skip tests compile+run)"
+echo "[1/2] Building API at $ROOT_DIR (compile tests, skip running)"
 (mkdir -p "$ROOT_DIR/target" >/dev/null 2>&1 || true)
-(cd "$ROOT_DIR" && mvn -Dmaven.test.skip=true clean package install)
+(cd "$ROOT_DIR" && mvn -DskipTests=true clean package install)
 
-echo "[2/2] Building apps module at $ROOT_DIR/apps (skip tests compile+run)"
-(cd "$ROOT_DIR/apps" && mvn -Dmaven.test.skip=true clean package)
+echo "[2/2] Building apps module at $ROOT_DIR/apps (compile tests, skip running)"
+(cd "$ROOT_DIR/apps" && mvn -DskipTests=true clean package)
 
 echo "Done. Artifacts:"
 echo " - API: $ROOT_DIR/target/*.jar (installed to: $LOCAL_REPO)"
