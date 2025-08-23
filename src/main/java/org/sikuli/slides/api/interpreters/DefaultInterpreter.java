@@ -757,24 +757,37 @@ public class DefaultInterpreter implements Interpreter {
 
 
 		Action keywordAction = null;
-		Iterator<Interpreter> iter = interpreters.iterator();
-		while (keywordAction == null && iter.hasNext()){
-			keywordAction = iter.next().interpret(slide);		
-		}
+        Iterator<Interpreter> iter = interpreters.iterator();
+        while (keywordAction == null && iter.hasNext()){
+            keywordAction = iter.next().interpret(slide);
+        }
 
-		if (keywordAction instanceof TargetAction){
-			keywordAction = new RetryAction(keywordAction, 10000, 500);
-		}
+        if (keywordAction instanceof TargetAction){
+            // Configurable retry for target actions:
+            // - Default total wait: 5 seconds
+            // - Retry interval: 1/10 of total wait, clamped to [500ms, 2000ms]
+            long totalWaitMs = 5000L;
+            try {
+                String prop = System.getProperty("slides.retry.wait.ms");
+                if (prop != null && !prop.isEmpty()) {
+                    long v = Long.parseLong(prop.trim());
+                    if (v > 0) totalWaitMs = v;
+                }
+            } catch (Throwable ignored) {}
 
-		if (keywordAction != null){
-			parallelAction.addChild(keywordAction);
-		}
+            long intervalMs = Math.max(500L, Math.min(2000L, totalWaitMs / 10L));
+            keywordAction = new RetryAction(keywordAction, totalWaitMs, intervalMs);
+        }
 
-		Action controlAction = null;
-		iter = controlActionInterpreters.iterator();
-		while (controlAction == null && iter.hasNext()){
-			controlAction = iter.next().interpret(slide);
-		}
+        if (keywordAction != null){
+            parallelAction.addChild(keywordAction);
+        }
+
+        Action controlAction = null;
+        iter = controlActionInterpreters.iterator();
+        while (controlAction == null && iter.hasNext()){
+            controlAction = iter.next().interpret(slide);
+        }
 
 		Interpreter labelInterpreter = new LabelInterpreter();
 		Action labelAction;

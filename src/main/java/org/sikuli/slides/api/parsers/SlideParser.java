@@ -63,9 +63,20 @@ public class SlideParser {
 
 			Element ln = (Element) spPr.getElementsByTagName("a:ln").item(0);
 			if (ln != null){
-				Node schemeClr = ln.getElementsByTagName("a:schemeClr").item(0);
-				if (schemeClr != null){
-					e.setLineColor(((Element) schemeClr).getAttribute("val"));
+				// Prefer explicit RGB line color if present
+				Element lnSolid = (Element) ln.getElementsByTagName("a:solidFill").item(0);
+				if (lnSolid != null){
+					Element srgb = (Element) lnSolid.getElementsByTagName("a:srgbClr").item(0);
+					if (srgb != null){
+						e.setLineColor(srgb.getAttribute("val"));
+					}
+				}
+				// Fallback to scheme color if RGB not provided
+				if (e.getLineColor() == null){
+					Node schemeClr = ln.getElementsByTagName("a:schemeClr").item(0);
+					if (schemeClr != null){
+						e.setLineColor(((Element) schemeClr).getAttribute("val"));
+					}
 				}				
 			}
 
@@ -97,17 +108,36 @@ public class SlideParser {
 				}
 			}
 
-			NodeList list = element.getElementsByTagName("a:solidFill");
-			if (list.getLength() > 0){				
-				Element solidFill = (Element) list.item(0);
-				Element srgbClr = (Element) solidFill.getElementsByTagName("a:srgbClr").item(0);
-				if (srgbClr != null)
-					e.setBackgroundColor(srgbClr.getAttribute("val"));
+			// Background fill: only consider direct solidFill under spPr (ignore a:ln solidFill)
+			// Also respect a:noFill
+			if (spPr != null){
+				// if noFill exists, treat as transparent
+				if (spPr.getElementsByTagName("a:noFill").getLength() > 0){
+					e.setBackgroundColor(null);
+				}else{
+					NodeList fills = spPr.getElementsByTagName("a:solidFill");
+					for (int i = 0; i < fills.getLength(); ++i){
+						Element solidFill = (Element) fills.item(i);
+						// ensure this solidFill is a direct child of spPr (not under a:ln)
+						if (solidFill.getParentNode() == spPr){
+							Element srgbClr = (Element) solidFill.getElementsByTagName("a:srgbClr").item(0);
+							if (srgbClr != null){
+								e.setBackgroundColor(srgbClr.getAttribute("val"));
+								break;
+							}
+							Element schemeClr = (Element) solidFill.getElementsByTagName("a:schemeClr").item(0);
+							if (schemeClr != null){
+								e.setBackgroundColor(schemeClr.getAttribute("val"));
+								break;
+							}
+						}
+					}
+				}
 			}
 
-			list = element.getElementsByTagName("a:prstGeom");
-			if (list.getLength() > 0){
-				Element prstGeom = (Element) list.item(0);				
+			NodeList prstList = element.getElementsByTagName("a:prstGeom");
+			if (prstList.getLength() > 0){
+				Element prstGeom = (Element) prstList.item(0);				
 				e.setGeom(prstGeom.getAttribute("prst"));
 			}			
 

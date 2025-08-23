@@ -243,22 +243,32 @@ public class ExecuteMain {
             return;
         }
         
+        // Single run banner and consolidated termination
+        System.out.println();
+        System.out.println("DO NOT USE THE KEYBOARD OR MOUSE UNTIL TEST EXECUTION ENDS!");
+        System.out.println();
+
+        int exitCode = 0;
         try {
             Slides.execute(url, context);
         } catch (SlideExecutionException e) {
+            exitCode = 1;
             System.err.println("Execution failed because " + e.getMessage());            
             if (e.getSlide() != null){
                 System.err.print("On slide no. " + e.getSlide().getNumber());
                 System.err.println(" Failed to execute " + e.getAction());
             }
-            // make sure to terminate on failure (avoid lingering non-daemon threads)
+        } finally {
+            try {
+                System.out.println();
+                System.out.println("You may now use the keyboard and mouse. Test execution finished.");
+                System.out.println();
+            } catch (Throwable t) {
+                // ignore console issues
+            }
             try { LogManager.shutdown(); } catch (Throwable t) {}
-            System.exit(1);
-            return;
+            System.exit(exitCode);
         }
-        // success path: terminate explicitly
-        try { LogManager.shutdown(); } catch (Throwable t) {}
-        System.exit(0);
     }
 
     public static void main(String... args) {

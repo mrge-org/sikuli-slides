@@ -67,7 +67,7 @@ public class VerifyPatternInRegion {
             BufferedImage vis = deepCopy(region);
             Graphics2D g = vis.createGraphics();
             try {
-                g.setColor(Color.RED);
+                g.setColor(Color.YELLOW);
                 g.setStroke(new BasicStroke(2f));
                 g.drawRect(best.x, best.y, pattern.getWidth() - 1, pattern.getHeight() - 1);
             } finally {
