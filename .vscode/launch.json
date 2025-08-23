@@ -4,7 +4,20 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
+        {
+            "type": "java",
+            "name": "ImageRegionMatcher",
+            "request": "launch",
+            "mainClass": "ImageRegionMatcher",
+            "projectName": "sikuli-slides-api"
+        },
+        {
+            "type": "java",
+            "name": "ImageRegionMatcher",
+            "request": "launch",
+            "mainClass": "org.sikuli.slides.tools.ImageRegionMatcher",
+            "projectName": "sikuli-slides-api"
+        },
         {
             "type": "java",
             "name": "Current File",
@@ -59,13 +72,19 @@
             ],
             "args": [
                 "/Users/gpetrov/mirror_src/sikuli-slides-PoC/demo_ed3.pptx",
-                "-wait", "8000",
-                "-range", "1-",
-                "-screen", "2",
-                "-region", "20,120,393,903",
-                "-min_score", "0.2",
+                "-wait",
+                "8000",
+                "-range",
+                "1-",
+                "-screen",
+                "2",
+                "-region",
+                "20,120,393,903",
+                "-min_score",
+                "0.2",
                 "-use_awt_robot",
-                "-log", "DEBUG"
+                "-log",
+                "DEBUG"
             ],
             "vmArgs": "-Djava.awt.headless=false",
             "console": "integratedTerminal",
