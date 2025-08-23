@@ -188,6 +188,8 @@ public class ExecuteMain {
     void configureLogging(String logLevelString){
         try {
             Level level = Level.toLevel(logLevelString, Level.INFO);
+            // Ensure we don't accumulate multiple console/file appenders
+            LogManager.resetConfiguration();
             Logger root = Logger.getRootLogger();
 
             // Always attach our console appender (in addition to any existing ones)
@@ -196,9 +198,11 @@ public class ExecuteMain {
 
             // Attach a rolling file appender if slides.logfile is provided
             String logPath = System.getProperty("slides.logfile");
-            if (logPath != null && !logPath.isEmpty()) {
+            boolean teeActive = Boolean.parseBoolean(System.getProperty("slides.tee.active", "false"));
+            if (logPath != null && !logPath.isEmpty() && !teeActive) {
                 try {
-                    PatternLayout fileLayout = new PatternLayout("%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5p %c - %m%n");
+                    // Match user's preferred time/thread-only prefix
+                    PatternLayout fileLayout = new PatternLayout("%d{HH:mm:ss.SSS} [%t] %-5p %c - %m%n");
                     RollingFileAppender rfa = new RollingFileAppender(fileLayout, logPath, true);
                     rfa.setMaxBackupIndex(3);
                     rfa.setMaxFileSize("5MB"); // Log4j 1.x API
@@ -215,8 +219,7 @@ public class ExecuteMain {
             Logger.getLogger("org.sikuli").setLevel(level);
             Logger.getLogger("org.sikuli.slides").setLevel(level);
             Logger.getLogger("org.sikuli.script").setLevel(level);
-
-            LOG.info("Log4j configured: level=" + level + (logPath != null ? (" file=" + logPath) : ""));
+            // Intentionally do not log a 'configured' banner to avoid duplicates when reconfiguring later
         } catch (Throwable t) {
             LOG.warn("Failed to configure Log4j: " + t.getMessage());
         }
@@ -259,7 +262,9 @@ public class ExecuteMain {
         }
         
         // Single run banner and consolidated termination
-        LOG.info("DO NOT USE THE KEYBOARD OR MOUSE UNTIL TEST EXECUTION ENDS!");
+        LOG.info("\n\n         DO NOT USE THE KEYBOARD OR MOUSE UNTIL TEST EXECUTION ENDS!\n\n");
+        // Announce NCC-only single-scale mode once per run
+        LOG.info("single-scale mode: using NCC-only search (no SikuliX find/wait)");
 
         int exitCode = 0;
         try {
@@ -272,7 +277,7 @@ public class ExecuteMain {
             }
         } finally {
             try {
-                LOG.info("You may now use the keyboard and mouse. Test execution finished.");
+                LOG.info("\n\nYou may now use the keyboard and mouse. Test execution finished.\n\n");
             } catch (Throwable t) {
                 // ignore console issues
             }
@@ -297,6 +302,10 @@ public class ExecuteMain {
             System.setErr(new java.io.PrintStream(new TeeOutputStream(origErr, fos), true));
             // let Log4j know about the file path; configureLogging() will attach a file appender
             System.setProperty("slides.logfile", logFile.getAbsolutePath());
+            // mark tee as active; configureLogging() will avoid attaching a file appender to prevent duplicate lines
+            System.setProperty("slides.tee.active", "true");
+            // Immediately configure logging so any early logs (e.g., SikuliX libs) use the preferred pattern.
+            new ExecuteMain().configureLogging("INFO");
             Logger.getLogger(ExecuteMain.class).info("Console is being logged to: " + logFile.getAbsolutePath());
         } catch (Throwable t) {
             // best-effort; do not fail if logging to file cannot be established

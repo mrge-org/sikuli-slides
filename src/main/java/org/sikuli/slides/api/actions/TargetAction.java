@@ -120,8 +120,8 @@ public class TargetAction extends ChainedAction {
     
     @Override
     public void execute(Context context) throws ActionExecutionException {
-        LOG.info("DEBUG: TargetAction.execute() called - checking for NCC fallback integration");
-        LOG.info("DEBUG: Context.getMinScore() = " + context.getMinScore());
+        LOG.debug("TargetAction.execute() called - checking for NCC fallback integration");
+        LOG.debug("Context.getMinScore() = " + context.getMinScore());
         // Record slide number for diagnostics
         try {
             Slide s = context.getSlide();
@@ -139,12 +139,12 @@ public class TargetAction extends ChainedAction {
             if (getPattern() != null && getPattern().getImage() != null && getPattern().getImage().get() != null) {
                 int pw = getPattern().getImage().get().getWidth();
                 int ph = getPattern().getImage().get().getHeight();
-                LOG.info("pattern pixel size=" + pw + "x" + ph + " min_score=" + context.getMinScore());
+                LOG.debug("pattern pixel size=" + pw + "x" + ph + " min_score=" + context.getMinScore());
                 if (exhaustive) {
                     int rw = screenRegion.getW();
                     int rh = screenRegion.getH();
                     long positions = Math.max(0L, (long)(rw - pw + 1)) * Math.max(0L, (long)(rh - ph + 1));
-                    LOG.info("exhaustive=true region=" + rw + "x" + rh + " positions=" + positions);
+                    LOG.debug("exhaustive=true region=" + rw + "x" + rh + " positions=" + positions);
                 }
                 try {
                     boolean hasAlpha = getPattern().getImage().get().getColorModel().hasAlpha();
@@ -216,7 +216,7 @@ public class TargetAction extends ChainedAction {
         long t0 = System.nanoTime();
         // Enforce strict 1:1 single-scale matching only (no SikuliX internal multi-scale)
         // Always use our NCC implementation to avoid any implicit scaling.
-        LOG.info("single-scale mode: using NCC-only search (no SikuliX find/wait)");
+        LOG.debug("single-scale mode: using NCC-only search (no SikuliX find/wait)");
         // Compute a hidden prioritized hint region. We always attempt both sources
         // and then select according to toggle preference with fallback:
         // - default (disable_slide_hint=false): prefer slide-based, fallback to image-driven
@@ -231,17 +231,17 @@ public class TargetAction extends ChainedAction {
             try {
                 slideHint = computeAutoHintRegion(context, patImg);
                 if (slideHint != null) {
-                    LOG.info("hint (slide-based) computed: " + slideHint);
+                    LOG.debug("hint (slide-based) computed: " + slideHint);
                 } else {
-                    LOG.info("hint (slide-based) not available");
+                    LOG.debug("hint (slide-based) not available");
                 }
             } catch (Throwable igSlide) {}
             try {
                 imageHint = coarseScanForHint(screenRegion, patImg, context.getMinScore());
                 if (imageHint != null) {
-                    LOG.info("hint (image-driven) computed: " + imageHint);
+                    LOG.debug("hint (image-driven) computed: " + imageHint);
                 } else {
-                    LOG.info("hint (image-driven) not available");
+                    LOG.debug("hint (image-driven) not available");
                 }
             } catch (Throwable igImg) {}
 
@@ -252,15 +252,15 @@ public class TargetAction extends ChainedAction {
                 long a1 = (long) first.getW() * (long) first.getH();
                 long a2 = (long) second.getW() * (long) second.getH();
                 hintRegion = (a1 <= a2) ? first : second;
-                LOG.info("hint selected (preferred order " + (disableSlideHint ? "image,slide" : "slide,image") + ") by smaller area: " + hintRegion);
+                LOG.debug("hint selected (preferred order " + (disableSlideHint ? "image,slide" : "slide,image") + ") by smaller area: " + hintRegion);
             } else if (first != null) {
                 hintRegion = first;
-                LOG.info("hint selected (preferred): " + hintRegion);
+                LOG.debug("hint selected (preferred): " + hintRegion);
             } else if (second != null) {
                 hintRegion = second;
-                LOG.info("hint selected (fallback): " + hintRegion);
+                LOG.debug("hint selected (fallback): " + hintRegion);
             } else {
-                LOG.info("no hint available from either source; proceeding without hint");
+                LOG.debug("no hint available from either source; proceeding without hint");
             }
         } catch (Throwable ignored) {}
         targetMatch = tryNCCFallback(screenRegion, context.getMinScore(), hintRegion);
@@ -343,9 +343,9 @@ public class TargetAction extends ChainedAction {
                 }
             }
             if (count > 0) {
-                LOG.info(sb.toString());
+                LOG.debug(sb.toString());
             } else {
-                LOG.info("SikuliX Settings: <none>");
+                LOG.debug("SikuliX Settings: <none>");
             }
         } catch (Throwable t) {
             LOG.debug("failed to dump SikuliX Settings: " + t.getMessage());
@@ -519,16 +519,16 @@ public class TargetAction extends ChainedAction {
             // Log slide mapping inputs to diagnose portrait/landscape mismatches
             try {
                 if (basis != null) {
-                    LOG.info(String.format("slide mapping: basis=picture(offx=%d,offy=%d,cx=%d,cy=%d) target(offx=%d,offy=%d,cx=%d,cy=%d) lineColor=%s",
+                    LOG.debug(String.format("slide mapping: basis=picture(offx=%d,offy=%d,cx=%d,cy=%d) target(offx=%d,offy=%d,cx=%d,cy=%d) lineColor=%s",
                         basis.getOffx(), basis.getOffy(), basis.getCx(), basis.getCy(),
                         targetElement.getOffx(), targetElement.getOffy(), targetElement.getCx(), targetElement.getCy(),
                         String.valueOf(targetElement.getLineColor())));
                 } else {
-                    LOG.info(String.format("slide mapping: slideW=%d slideH=%d elem(offx=%d, offy=%d, cx=%d, cy=%d) lineColor=%s",
+                    LOG.debug(String.format("slide mapping: slideW=%d slideH=%d elem(offx=%d, offy=%d, cx=%d, cy=%d) lineColor=%s",
                         slideW, slideH, targetElement.getOffx(), targetElement.getOffy(), targetElement.getCx(), targetElement.getCy(), String.valueOf(targetElement.getLineColor())));
                 }
                 if (isRedLike(targetElement.getLineColor())) {
-                    LOG.info("auto hint: selected RED-outlined target element for hint region");
+                    LOG.debug("auto hint: selected RED-outlined target element for hint region");
                 }
             } catch (Throwable ig) {}
 
@@ -548,7 +548,7 @@ public class TargetAction extends ChainedAction {
                 ymin = Math.max(0.0, Math.min(1.0, ymin));
                 xmax = Math.max(0.0, Math.min(1.0, xmax));
                 ymax = Math.max(0.0, Math.min(1.0, ymax));
-                LOG.info(String.format("slide mapping basis=picture -> fractions xmin=%.4f ymin=%.4f xmax=%.4f ymax=%.4f", xmin, ymin, xmax, ymax));
+                LOG.debug(String.format("slide mapping basis=picture -> fractions xmin=%.4f ymin=%.4f xmax=%.4f ymax=%.4f", xmin, ymin, xmax, ymax));
             } else {
                 // Fallback: map relative to entire slide canvas
                 xmin = Math.max(0.0, Math.min(1.0, (double) targetElement.getOffx() / slideW));
@@ -621,7 +621,7 @@ public class TargetAction extends ChainedAction {
 
     private Match tryNCCFallback(Region screenRegion, double minScore, Region hintRegion) {
         try {
-            LOG.info("NCC fallback: starting custom pattern matching");
+            LOG.debug("NCC fallback: starting custom pattern matching");
             BufferedImage patternImage = getPattern().getImage().get();
 
             // If provided, intersect hint with screenRegion and ensure it can contain the pattern
@@ -647,7 +647,7 @@ public class TargetAction extends ChainedAction {
 
             // 1) Try prioritized hint region first
             if (prioritized != null) {
-                LOG.info("NCC fallback: trying hint region first: " + prioritized);
+                LOG.debug("NCC fallback: trying hint region first: " + prioritized);
                 // Save prioritized (intersected) hint capture
                 try {
                     File outDir = new File("target/debug/hints");
@@ -677,9 +677,9 @@ public class TargetAction extends ChainedAction {
                         return match;
                     }
                     long elapsedMs = (System.nanoTime() - start) / 1_000_000L;
-                    LOG.info("NCC fallback: hint pre-wait attempt " + attempt + " no match (>= " + minScore + ") elapsed=" + elapsedMs + "ms of " + budgetMs + "ms");
+                    LOG.debug("NCC fallback: hint pre-wait attempt " + attempt + " no match (>= " + minScore + ") elapsed=" + elapsedMs + "ms of " + budgetMs + "ms");
                     if (elapsedMs >= budgetMs) {
-                        LOG.info("NCC fallback: no match in hint region after pre-wait (attempts=" + attempt + ", elapsed=" + elapsedMs + "ms); proceeding to expansion");
+                        LOG.debug("NCC fallback: no match in hint region after pre-wait (attempts=" + attempt + ", elapsed=" + elapsedMs + "ms); proceeding to expansion");
                         break;
                     }
                     sleepMs(intervalMs);
@@ -698,7 +698,7 @@ public class TargetAction extends ChainedAction {
                     boolean fits = nw >= patternImage.getWidth() && nh >= patternImage.getHeight();
                     if (nw > 0 && nh > 0 && fits) {
                         Region expanded = new Region(nx, ny, nw, nh);
-                        LOG.info("NCC fallback: expanding hint region and retrying: " + expanded);
+                        LOG.debug("NCC fallback: expanding hint region and retrying: " + expanded);
                         try {
                             File outDir = new File("target/debug/hints");
                             if (!outDir.exists()) outDir.mkdirs();
@@ -718,7 +718,7 @@ public class TargetAction extends ChainedAction {
                             LOG.info("NCC fallback: found in expanded hint region at " + match.getTarget() + " score=" + match.getScore());
                             return match;
                         }
-                        LOG.info("NCC fallback: no match in expanded hint region");
+                        LOG.debug("NCC fallback: no match in expanded hint region");
                     }
                 } catch (Throwable igExp) {
                     // best effort expansion
@@ -749,13 +749,14 @@ public class TargetAction extends ChainedAction {
                         LOG.info("NCC fallback: found in coarse image-driven hint at " + match.getTarget() + " score=" + match.getScore());
                         return match;
                     }
-                    LOG.info("NCC fallback: no match in coarse image-driven hint region");
+                    LOG.debug("NCC fallback: no match in coarse image-driven hint region");
                 }
             } catch (Throwable igCoarse) {
                 // best effort
             }
 
             // 3) Fallback to full region
+            LOG.info("NCC fallback: switching to full-region normal match");
             BufferedImage regionImage = screenRegion.getScreen().capture(screenRegion).getImage();
             NCCResult nccResult = findWithNCC(regionImage, patternImage, minScore);
             if (nccResult != null) {
@@ -769,7 +770,7 @@ public class TargetAction extends ChainedAction {
                 return match;
             }
 
-            LOG.info("NCC fallback: no match found above threshold " + minScore);
+            LOG.debug("NCC fallback: no match found above threshold " + minScore);
             return null;
         } catch (Throwable ex) {
             LOG.warn("NCC fallback failed: " + ex.getMessage());
