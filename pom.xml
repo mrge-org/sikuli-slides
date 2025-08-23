@@ -187,7 +187,6 @@
 							<!-- Specific actions tests that depend on legacy org.sikuli.api or mocks -->
 							<exclude>**/org/sikuli/slides/api/actions/ExecutionListenerTest.java</exclude>
 							<exclude>**/org/sikuli/slides/api/actions/RobotActionTest.java</exclude>
-							<exclude>**/org/sikuli/slides/api/actions/TargetActionTest.java</exclude>
 							<exclude>**/org/sikuli/slides/api/actions/WaitActionTest.java</exclude>
 							<!-- Specific interpreter tests that rely on legacy APIs -->
 							<exclude>**/org/sikuli/slides/api/interpreters/ConfigInterpreterTest.java</exclude>

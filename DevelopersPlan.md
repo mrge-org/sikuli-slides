@@ -55,6 +55,53 @@
 - Retry policy: We repeatedly try within the selected hint region until a pre-wait budget elapses before expanding, then try coarse image-driven, then full-region.
 - Build: use `./build-all.sh` locally (skips compiling/running tests) to refresh the shaded apps JAR.
 
+## Test Migration
+
+Goal: migrate tests off legacy `org.sikuli.api` to SikuliX `org.sikuli.script` and our `Context`, re‑enable them incrementally in `pom.xml`.
+
+Principles:
+
+- Keep migrated tests compile‑only initially using `@Ignore` to avoid UI/image dependencies.
+- Replace legacy `Target`, `DesktopScreenRegion`, `DesktopCanvas`, and mocks with `Pattern` and `Context`.
+- Narrow `<testExcludes>` in `pom.xml` as soon as a test compiles on new APIs.
+- Prefer the project build script `./build-all.sh` for validation.
+
+Mapping (legacy -> new):
+
+- `org.sikuli.api.Target` -> `org.sikuli.script.Pattern`
+- `DesktopScreenRegion`/`Region` -> `Context.getScreenRegion()`
+- Canvas/viewer classes -> avoid in unit tests; rely on `@Ignore` or refactor to pure logic
+- Legacy mocks -> Mockito for `Action` only; no image/region mocks
+
+Steps per test class:
+
+1. Import `org.sikuli.script.Pattern` and `org.sikuli.slides.api.Context`.
+2. Rewrite constructors/usages to pass `Pattern` into actions (e.g., `new TargetAction(pattern, child)`).
+3. Add `@Ignore("compile-only migration")` and avoid `action.execute(...)` calls unless headless-safe.
+4. Update `pom.xml` `<testExcludes>` to remove that test.
+5. Run `./build-all.sh` to ensure compile succeeds.
+
+Status and checklist:
+
+- [x] `AssertActionTest` migrated to `Pattern` + `Context` and enabled for compilation.
+- [x] `TargetActionTest` migrated to `Pattern`; enabled for compilation.
+- [ ] `WaitActionTest` – replace with `Pattern`, mark ignored, then enable.
+- [ ] `ExecutionListenerTest` – decouple from canvas/viewers; make compile‑only first.
+- [ ] `RobotActionTest` – keep excluded; move under dedicated profile `hooks` later.
+- [ ] Viewer/Interpreter tests – refactor to reader‑only logic; keep UI tests excluded for now.
+
+Build profiles and running:
+
+- Default: `./build-all.sh` (preferred; aligns with repo scripts).
+- Unit‑only: `mvn -Punit-only test` (excludes action/UI heavy tests).
+- Hooks: `mvn -Phooks test` (only global hook dependent tests; macOS may need permissions).
+
+Enabling strategy in `pom.xml` (`maven-compiler-plugin` > `testExcludes`):
+
+- Remove excludes for migrated compile‑only tests immediately.
+- Keep excludes for UI/viewer/driver and hook‑dependent tests until refactored or profiled.
+
+
 ## Prioritization
 10
 
