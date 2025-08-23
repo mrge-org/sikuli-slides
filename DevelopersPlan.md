@@ -33,17 +33,20 @@
    - Location: `apps/.../ExecuteMain.configureLogging()`, `apps/.../ExecuteMain.main()`, build guard in `build-all.sh`.
    - Scope:
      - Always attach ConsoleAppender and RollingFileAppender (path set via `slides.logfile`).
-     - Replace `System.out/err` prints in app with `LOG.*` calls; keep a small tee only to capture third‑party stdout/stderr.
-     - Build guard fails if new `System.out/err.print*` appear in repo Java sources.
+   DONE  - Replace `System.out/err` prints in app with `LOG.*` calls; keep a small tee only to capture third‑party stdout/stderr.
+   DONE  - Build guard fails if new `System.out/err.print*` appear in repo Java sources.
    - Expected result when complete:
      - The timestamped run log (e.g., `sikuli-slides-<pptx name>-YYYYMMDD_HHMMSS.log`) contains ALL Log4j INFO/DEBUG lines seen on the console, not just SikuliX `[log]` entries.
      - Console and file logs have consistent formatting and levels; level controlled by `-log DEBUG|INFO|...`.
-     - Rolling policy keeps up to 3 backups, ~5MB each; long sessions don’t lose earlier logs.
-     - No raw `System.out/err` in code except the internal `TeeOutputStream` implementation.
-     - Easier post‑mortem: single log file is sufficient to diagnose slide mapping, hint selection, and NCC phases.
+   SKIP  - Rolling policy keeps up to 3 backups, ~5MB each; long sessions don’t lose earlier logs.
+   CANNOT UNDERSTAND  - No raw `System.out/err` in code except the internal `TeeOutputStream` implementation.
+   DONE  - Easier post‑mortem: single log file is sufficient to diagnose slide mapping, hint selection, and NCC phases.
+   LOW   - Optional: initialize final log filename after `parseArgs()` (create correct name from start) instead of renaming.
 
-10. [Pending] When run finishes, print a summary of the run
-   - e.g., "Test passed" or "Test failed on slide 3".
+10. [Done] When run finishes, print a summary of the run
+   - Emits one-line summary at INFO in `apps/.../ExecuteMain.execute()` finally block:
+     - Success: `SUMMARY: Test passed`.
+     - Failure: `SUMMARY: Test failed on slide <n>: <action>` when available; otherwise: `SUMMARY: Test failed`.
    
 
 ## Notes
@@ -53,6 +56,7 @@
 - Build: use `./build-all.sh` locally (skips compiling/running tests) to refresh the shaded apps JAR.
 
 ## Prioritization
+10
 
 - You can assign numbers or notes here per item above, e.g.:
   - P1: Inspect hints artifacts/logs

@@ -1,5 +1,5 @@
 ---
-trigger: manual
+trigger: always_on
 ---
 
 Whenever you changed code, do build according to DEVELOPERS.md and check for compilation errors.

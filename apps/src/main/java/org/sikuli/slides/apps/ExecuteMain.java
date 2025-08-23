@@ -260,13 +260,50 @@ public class ExecuteMain {
             System.exit(0);
             return;
         }
-        
+
+        // Rename early-created run log to include the input base name once we know it
+        try {
+            String currentLog = System.getProperty("slides.logfile");
+            if (currentLog != null && !currentLog.isEmpty() && url != null) {
+                java.io.File cur = new java.io.File(currentLog);
+                String ts = null;
+                // Try to extract timestamp from existing name: sikuli-slides-run-YYYYMMDD_HHmmss.log
+                String name = cur.getName();
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile(".*?(\\d{8}_\\d{6})\\.log$").matcher(name);
+                if (m.find()) {
+                    ts = m.group(1);
+                } else {
+                    // fallback to now
+                    ts = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
+                }
+                // Derive <pptx name> from URL path
+                String base = new java.io.File(url.getPath()).getName();
+                int dot = base.lastIndexOf('.');
+                if (dot > 0) base = base.substring(0, dot);
+                java.io.File dir = cur.getParentFile() != null ? cur.getParentFile() : new java.io.File(".");
+                java.io.File target = new java.io.File(dir, "sikuli-slides-" + base + "-" + ts + ".log");
+                if (!target.equals(cur)) {
+                    boolean ok = cur.renameTo(target);
+                    if (ok) {
+                        System.setProperty("slides.logfile", target.getAbsolutePath());
+                        LOG.info("Run log renamed to: " + target.getName());
+                    } else {
+                        LOG.debug("Could not rename run log to final name: " + target.getAbsolutePath());
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            LOG.debug("run log rename skipped: " + t.getMessage());
+        }
+
         // Single run banner and consolidated termination
         LOG.info("\n\n         DO NOT USE THE KEYBOARD OR MOUSE UNTIL TEST EXECUTION ENDS!\n\n");
         // Announce NCC-only single-scale mode once per run
         LOG.info("single-scale mode: using NCC-only search (no SikuliX find/wait)");
 
         int exitCode = 0;
+        Integer failSlideNum = null;
+        String failAction = null;
         try {
             Slides.execute(url, context);
         } catch (SlideExecutionException e) {
@@ -274,10 +311,24 @@ public class ExecuteMain {
             LOG.error("Execution failed because " + e.getMessage());            
             if (e.getSlide() != null){
                 LOG.error(String.format("On slide no. %d Failed to execute %s", e.getSlide().getNumber(), e.getAction()));
+                failSlideNum = e.getSlide().getNumber();
+                failAction = String.valueOf(e.getAction());
             }
         } finally {
             try {
                 LOG.info("\n\nYou may now use the keyboard and mouse. Test execution finished.\n\n");
+                // One-line summary for post-mortem grepability
+                if (exitCode == 0) {
+                    LOG.info("SUMMARY: Test passed");
+                } else {
+                    if (failSlideNum != null && failAction != null) {
+                        LOG.info(String.format("SUMMARY: Test failed on slide %d: %s", failSlideNum, failAction));
+                    } else if (failSlideNum != null) {
+                        LOG.info(String.format("SUMMARY: Test failed on slide %d", failSlideNum));
+                    } else {
+                        LOG.info("SUMMARY: Test failed");
+                    }
+                }
             } catch (Throwable t) {
                 // ignore console issues
             }
