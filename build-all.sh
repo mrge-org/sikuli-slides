@@ -13,17 +13,20 @@ fi
 ## Guard: disallow raw System.out/err usage in main Java sources (use Log4j instead)
 # - Scan only main sources (exclude tests)
 # - Ignore occurrences on commented lines (//, /*, *)
-VIOLATIONS=$(grep -R -nE 'System\.(out|err)\.print' \
+RAW_VIOLATIONS=$(grep -R -nE 'System\.(out|err)\.print' \
   "$ROOT_DIR/src/main/java" "$ROOT_DIR/apps/src/main/java" \
   --include='*.java' 2>/dev/null \
   | grep -v 'TeeOutputStream' \
-  | grep -v 'apps/src/main/java/com/sampullara/cli/' \
+  | grep -v 'apps/src/main/java/com/sampullara/cli/' || true)
+# Filter out commented lines by removing leading file:line: prefix before applying comment filters
+FILTERED=$(printf "%s\n" "$RAW_VIOLATIONS" \
+  | sed -E 's|^[^:]+:[0-9]+:||' \
   | grep -v -E '^[[:space:]]*//' \
   | grep -v -E '^[[:space:]]*/\*' \
   | grep -v -E '^[[:space:]]*\*' || true)
-if [ -n "$VIOLATIONS" ]; then
+if [ -n "$FILTERED" ]; then
   echo "Build guard failed: Found System.out/err usage in Java sources (use Log4j)."
-  echo "$VIOLATIONS"
+  echo "$RAW_VIOLATIONS"
   exit 3
 fi
 

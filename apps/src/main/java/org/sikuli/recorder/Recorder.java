@@ -80,8 +80,10 @@ public class Recorder {
         logger.info(" Event folder: {}", getEventDir().getAbsolutePath());
         logger.info(" Capture backend: {}", captureContext.getBackend());
         if (regionOfInterest != null) {
-            logger.info(" ROI: x={} y={} w={} h={}",
-                    regionOfInterest.getX(), regionOfInterest.getY(), regionOfInterest.getW(), regionOfInterest.getH());
+            logger.info(" ROI: x=" + regionOfInterest.getX() +
+                    " y=" + regionOfInterest.getY() +
+                    " w=" + regionOfInterest.getW() +
+                    " h=" + regionOfInterest.getH());
         }
 
         // Probe a single screen capture to surface Screen Recording issues on macOS.
@@ -116,8 +118,10 @@ public class Recorder {
             try {
                 if (hasStarted.get() && mouseDetector != null && !mouseDetector.hasDetected()) {
                     logger.info(" Note: No mouse activity detected in ROI in the first 15s.");
-                    logger.info("  - Ensure you click inside the specified ROI: x={} y={} w={} h={}",
-                            regionOfInterest.getX(), regionOfInterest.getY(), regionOfInterest.getW(), regionOfInterest.getH());
+                    logger.info("  - Ensure you click inside the specified ROI: x=" + regionOfInterest.getX() +
+                            " y=" + regionOfInterest.getY() +
+                            " w=" + regionOfInterest.getW() +
+                            " h=" + regionOfInterest.getH());
                     logger.info("  - On macOS, verify Input Monitoring permission for your Terminal/IDE.");
                 }
             } catch (Throwable ignored) {}
